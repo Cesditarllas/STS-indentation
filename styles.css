@@ -118,10 +118,10 @@ body.sts-indentation-fold-arrows-enabled
   position: absolute;
   z-index: 3;
   inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
-  inset-block-start: 50%;
+  inset-block-start: 0;
   width: var(--sts-outline-indent, 16px);
-  height: var(--sts-outline-indent, 16px);
-  transform: translate(-50%, -50%);
+  height: 1lh;
+  transform: translate(-50%, -40%);
 }
 
 body.sts-indentation-fold-arrows-enabled
@@ -156,10 +156,10 @@ body.sts-indentation-fold-arrows-enabled
   opacity: 1 !important;
   visibility: visible !important;
   inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
-  inset-block-start: 50%;
+  inset-block-start: 0;
   width: var(--sts-outline-indent, 16px);
-  height: var(--sts-outline-indent, 16px);
-  transform: translate(-50%, -50%);
+  height: 1lh;
+  transform: translate(-50%, -40%);
   color: var(--sts-outline-line-color, #253545) !important;
 }
 
