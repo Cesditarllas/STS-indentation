@@ -66,7 +66,7 @@ body.sts-indentation-enabled
 
 body.sts-indentation-enabled
   .markdown-preview-view [data-sts-outline-depth]::before {
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
 }
 
 body.sts-indentation-guides-enabled
@@ -115,50 +115,13 @@ body.sts-indentation-fold-arrows-enabled
   .markdown-source-view.mod-cm6
   .cm-line.HyperMD-header[data-sts-outline-depth]
   .cm-fold-indicator {
-  --sts-heading-line-height: var(--line-height-normal, 1.5);
   position: absolute;
   z-index: 3;
   inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
-  inset-block-start: calc(0.5em * var(--sts-heading-line-height));
+  inset-block-start: 0;
   width: var(--sts-outline-indent, 16px);
-  height: var(--sts-outline-indent, 16px);
-  transform: translate(-50%, -50%);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-1 {
-  --sts-heading-line-height: var(--h1-line-height, 1.2);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-2 {
-  --sts-heading-line-height: var(--h2-line-height, 1.2);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-3 {
-  --sts-heading-line-height: var(--h3-line-height, 1.3);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-4 {
-  --sts-heading-line-height: var(--h4-line-height, 1.3);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-5 {
-  --sts-heading-line-height: var(--h5-line-height, 1.4);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header-6 {
-  --sts-heading-line-height: var(--h6-line-height, 1.4);
+  height: 1lh;
+  transform: translate(-50%, -40%);
 }
 
 body.sts-indentation-fold-arrows-enabled
@@ -193,41 +156,11 @@ body.sts-indentation-fold-arrows-enabled
   opacity: 1 !important;
   visibility: visible !important;
   inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
-  inset-block-start: calc(0.5em * var(--sts-heading-line-height, 1.3));
+  inset-block-start: 0;
   width: var(--sts-outline-indent, 16px);
-  height: var(--sts-outline-indent, 16px);
-  transform: translate(-50%, -50%);
+  height: 1lh;
+  transform: translate(-50%, -40%);
   color: var(--sts-outline-line-color, #253545) !important;
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h1[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h1-line-height, 1.2);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h2[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h2-line-height, 1.2);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h3[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h3-line-height, 1.3);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h4[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h4-line-height, 1.3);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h5[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h5-line-height, 1.4);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-preview-view h6[data-sts-outline-depth] {
-  --sts-heading-line-height: var(--h6-line-height, 1.4);
 }
 
 body.sts-indentation-fold-arrows-enabled
