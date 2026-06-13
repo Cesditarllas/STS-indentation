@@ -1,0 +1,27 @@
+{
+  "name": "kxc-heading-outline",
+  "version": "1.0.0",
+  "description": "Heading-aware indentation guides for Obsidian.",
+  "main": "main.js",
+  "scripts": {
+    "build": "node esbuild.config.mjs production",
+    "dev": "node esbuild.config.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "heading",
+    "outline",
+    "indentation"
+  ],
+  "author": "Cesditarllas",
+  "license": "MIT",
+  "devDependencies": {
+    "@codemirror/state": "6.5.0",
+    "@codemirror/view": "6.38.6",
+    "@types/node": "^24.0.3",
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.5",
+    "obsidian": "1.13.1",
+    "typescript": "^5.8.3"
+  }
+}

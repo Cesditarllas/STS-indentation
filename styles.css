@@ -1,0 +1,44 @@
+:root {
+  --kxc-outline-indent: 1em;
+  --kxc-outline-line-width: 1px;
+  --kxc-outline-line-color: var(--indentation-guide-color, #253545);
+}
+
+.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth],
+.markdown-preview-view [data-kxc-outline-depth] {
+  box-sizing: border-box;
+  position: relative;
+  padding-inline-start: calc(
+    var(--kxc-outline-depth, 0) * var(--kxc-outline-indent, 1em)
+  );
+}
+
+.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth]::before,
+.markdown-preview-view [data-kxc-outline-depth]::before {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset-block: 0;
+  inset-inline-start: 0;
+  width: calc(
+    var(--kxc-outline-depth, 0) * var(--kxc-outline-indent, 1em)
+  );
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to right,
+    transparent 0,
+    transparent calc(
+      var(--kxc-outline-indent, 1em) - var(--kxc-outline-line-width, 1px)
+    ),
+    var(--kxc-outline-line-color, #253545) calc(
+      var(--kxc-outline-indent, 1em) - var(--kxc-outline-line-width, 1px)
+    ),
+    var(--kxc-outline-line-color, #253545) var(--kxc-outline-indent, 1em)
+  );
+}
+
+.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth] > *,
+.markdown-preview-view [data-kxc-outline-depth] > * {
+  position: relative;
+  z-index: 1;
+}
