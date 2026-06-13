@@ -66,7 +66,7 @@ body.sts-indentation-enabled
 
 body.sts-indentation-enabled
   .markdown-preview-view [data-sts-outline-depth]::before {
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
 }
 
 body.sts-indentation-guides-enabled
@@ -117,11 +117,11 @@ body.sts-indentation-fold-arrows-enabled
   .cm-fold-indicator {
   position: absolute;
   z-index: 3;
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
-  inset-block-start: 0;
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
+  inset-block-start: 50%;
   width: var(--sts-outline-indent, 16px);
-  height: 1lh;
-  transform: translate(-50%, -40%);
+  height: var(--sts-outline-indent, 16px);
+  transform: translate(-50%, -50%);
 }
 
 body.sts-indentation-fold-arrows-enabled
@@ -155,11 +155,11 @@ body.sts-indentation-fold-arrows-enabled
   z-index: 3;
   opacity: 1 !important;
   visibility: visible !important;
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
-  inset-block-start: 0;
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
+  inset-block-start: 50%;
   width: var(--sts-outline-indent, 16px);
-  height: 1lh;
-  transform: translate(-50%, -40%);
+  height: var(--sts-outline-indent, 16px);
+  transform: translate(-50%, -50%);
   color: var(--sts-outline-line-color, #253545) !important;
 }
 
