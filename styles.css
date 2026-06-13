@@ -28,7 +28,8 @@
   display: none;
   position: absolute;
   z-index: 0;
-  inset-block: 0;
+  inset-block-start: 0;
+  inset-block-end: calc(-1 * var(--sts-outline-extend-after, 0px));
   width: calc(
     var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
   );
@@ -69,6 +70,11 @@ body.sts-indentation-guides-enabled
   .markdown-preview-view
   [data-sts-outline-depth]::before {
   display: block;
+}
+
+body.sts-indentation-guides-enabled
+  [data-sts-outline-widget]::before {
+  display: none;
 }
 
 body:not(.sts-indentation-colored-guides)

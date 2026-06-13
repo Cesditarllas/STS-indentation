@@ -27,12 +27,16 @@ var import_view = require("@codemirror/view");
 var import_obsidian = require("obsidian");
 var DEPTH_ATTRIBUTE = "data-sts-outline-depth";
 var DEPTH_STYLE = "--sts-outline-depth";
+var WIDGET_ATTRIBUTE = "data-sts-outline-widget";
+var EXTEND_STYLE = "--sts-outline-extend-after";
+var LINE_WIDTH_STYLE = "--sts-outline-line-width";
 var GUIDE_CLASS = "sts-indentation-guides-enabled";
 var COLORED_GUIDE_CLASS = "sts-indentation-colored-guides";
 var MAX_GUIDES = 6;
 var DEFAULT_SETTINGS = {
   showGuides: true,
-  colorGuidesByHeading: true
+  colorGuidesByHeading: true,
+  guideLineWidth: 1
 };
 function headingLevel(text) {
   const match = text.match(/^\s{0,3}(#{1,6})(?:\s+|$)/);
@@ -181,6 +185,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       window.cancelAnimationFrame(this.editorFrame);
     }
     document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
+    document.body.style.removeProperty(LINE_WIDTH_STYLE);
     document.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
       this.clearOutlineAttributes(element);
     });
@@ -195,6 +200,10 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     document.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
+    );
+    document.body.style.setProperty(
+      LINE_WIDTH_STYLE,
+      `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
     );
   }
   scheduleReadingViewUpdate() {
@@ -216,6 +225,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     });
   }
   updateEditorWidgets() {
+    document.querySelectorAll(`.cm-line[${DEPTH_ATTRIBUTE}]`).forEach((line) => line.style.removeProperty(EXTEND_STYLE));
     document.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
       container.querySelectorAll(
         ".cm-embed-block, .image-embed, .internal-embed.image-embed"
@@ -230,10 +240,23 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
           return;
         }
         this.copyOutlineAttributes(line, block);
+        block.setAttribute(WIDGET_ATTRIBUTE, "true");
+        const lineRect = line.getBoundingClientRect();
+        const blockRect = block.getBoundingClientRect();
+        const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
+        const currentExtension = Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
+        line.style.setProperty(
+          EXTEND_STYLE,
+          `${Math.max(currentExtension, extension)}px`
+        );
       });
     });
   }
   findWidgetSourceLine(widget) {
+    const parentLine = widget.closest(`.cm-line[${DEPTH_ATTRIBUTE}]`);
+    if (parentLine !== null) {
+      return parentLine;
+    }
     let sibling = widget.previousElementSibling;
     while (sibling !== null) {
       if (sibling instanceof HTMLElement && sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
@@ -241,8 +264,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       }
       sibling = sibling.previousElementSibling;
     }
-    const parentLine = widget.closest(`.cm-line[${DEPTH_ATTRIBUTE}]`);
-    return parentLine;
+    return null;
   }
   copyOutlineAttributes(source, target) {
     const depth = source.getAttribute(DEPTH_ATTRIBUTE);
@@ -314,7 +336,9 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   }
   clearOutlineAttributes(element) {
     element.removeAttribute(DEPTH_ATTRIBUTE);
+    element.removeAttribute(WIDGET_ATTRIBUTE);
     element.style.removeProperty(DEPTH_STYLE);
+    element.style.removeProperty(EXTEND_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       element.style.removeProperty(`--sts-guide-${index}`);
     }
@@ -336,6 +360,11 @@ var StsIndentationSettingTab = class extends import_obsidian.PluginSettingTab {
     new import_obsidian.Setting(containerEl).setName("\u5C42\u7EA7\u7EBF\u989C\u8272\u8DDF\u968F\u6807\u9898").setDesc("\u6BCF\u6761\u5C42\u7EA7\u7EBF\u4F7F\u7528\u5BF9\u5E94\u7236\u6807\u9898\u7684\u4E3B\u9898\u989C\u8272\u3002\u5173\u95ED\u540E\u7EDF\u4E00\u4F7F\u7528\u4E3B\u9898\u7684\u7F29\u8FDB\u7EBF\u989C\u8272\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.colorGuidesByHeading).onChange(async (value) => {
         await this.plugin.updateSettings({ colorGuidesByHeading: value });
+      });
+    });
+    new import_obsidian.Setting(containerEl).setName("\u5C42\u7EA7\u7EBF\u7C97\u7EC6").setDesc("\u8C03\u6574\u5C42\u7EA7\u7EBF\u5BBD\u5EA6\uFF0C\u8303\u56F4\u4E3A 0.1\u20132.0 px\u3002").addSlider((slider) => {
+      slider.setLimits(0.1, 2, 0.1).setDynamicTooltip().setValue(this.plugin.settings.guideLineWidth).onChange(async (value) => {
+        await this.plugin.updateSettings({ guideLineWidth: value });
       });
     });
   }

@@ -10,6 +10,9 @@ import { App, Plugin, PluginSettingTab, Setting } from "obsidian";
 
 const DEPTH_ATTRIBUTE = "data-sts-outline-depth";
 const DEPTH_STYLE = "--sts-outline-depth";
+const WIDGET_ATTRIBUTE = "data-sts-outline-widget";
+const EXTEND_STYLE = "--sts-outline-extend-after";
+const LINE_WIDTH_STYLE = "--sts-outline-line-width";
 const GUIDE_CLASS = "sts-indentation-guides-enabled";
 const COLORED_GUIDE_CLASS = "sts-indentation-colored-guides";
 const MAX_GUIDES = 6;
@@ -17,11 +20,13 @@ const MAX_GUIDES = 6;
 interface StsIndentationSettings {
   showGuides: boolean;
   colorGuidesByHeading: boolean;
+  guideLineWidth: number;
 }
 
 const DEFAULT_SETTINGS: StsIndentationSettings = {
   showGuides: true,
-  colorGuidesByHeading: true
+  colorGuidesByHeading: true,
+  guideLineWidth: 1
 };
 
 interface HeadingAncestor {
@@ -194,6 +199,7 @@ export default class StsIndentationPlugin extends Plugin {
     }
 
     document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
+    document.body.style.removeProperty(LINE_WIDTH_STYLE);
     document.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
       this.clearOutlineAttributes(element);
     });
@@ -210,6 +216,10 @@ export default class StsIndentationPlugin extends Plugin {
     document.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
+    );
+    document.body.style.setProperty(
+      LINE_WIDTH_STYLE,
+      `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
     );
   }
 
@@ -237,6 +247,10 @@ export default class StsIndentationPlugin extends Plugin {
 
   private updateEditorWidgets(): void {
     document
+      .querySelectorAll<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`)
+      .forEach(line => line.style.removeProperty(EXTEND_STYLE));
+
+    document
       .querySelectorAll<HTMLElement>(".markdown-source-view.mod-cm6 .cm-content")
       .forEach(container => {
         container
@@ -255,11 +269,27 @@ export default class StsIndentationPlugin extends Plugin {
             }
 
             this.copyOutlineAttributes(line, block);
+            block.setAttribute(WIDGET_ATTRIBUTE, "true");
+
+            const lineRect = line.getBoundingClientRect();
+            const blockRect = block.getBoundingClientRect();
+            const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
+            const currentExtension =
+              Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
+            line.style.setProperty(
+              EXTEND_STYLE,
+              `${Math.max(currentExtension, extension)}px`
+            );
           });
       });
   }
 
   private findWidgetSourceLine(widget: HTMLElement): HTMLElement | null {
+    const parentLine = widget.closest<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`);
+    if (parentLine !== null) {
+      return parentLine;
+    }
+
     let sibling = widget.previousElementSibling;
     while (sibling !== null) {
       if (
@@ -271,8 +301,7 @@ export default class StsIndentationPlugin extends Plugin {
       sibling = sibling.previousElementSibling;
     }
 
-    const parentLine = widget.closest<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`);
-    return parentLine;
+    return null;
   }
 
   private copyOutlineAttributes(
@@ -380,7 +409,9 @@ export default class StsIndentationPlugin extends Plugin {
 
   private clearOutlineAttributes(element: HTMLElement): void {
     element.removeAttribute(DEPTH_ATTRIBUTE);
+    element.removeAttribute(WIDGET_ATTRIBUTE);
     element.style.removeProperty(DEPTH_STYLE);
+    element.style.removeProperty(EXTEND_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       element.style.removeProperty(`--sts-guide-${index}`);
     }
@@ -415,6 +446,19 @@ class StsIndentationSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.colorGuidesByHeading)
           .onChange(async value => {
             await this.plugin.updateSettings({ colorGuidesByHeading: value });
+          });
+      });
+
+    new Setting(containerEl)
+      .setName("层级线粗细")
+      .setDesc("调整层级线宽度，范围为 0.1–2.0 px。")
+      .addSlider(slider => {
+        slider
+          .setLimits(0.1, 2, 0.1)
+          .setDynamicTooltip()
+          .setValue(this.plugin.settings.guideLineWidth)
+          .onChange(async value => {
+            await this.plugin.updateSettings({ guideLineWidth: value });
           });
       });
   }
