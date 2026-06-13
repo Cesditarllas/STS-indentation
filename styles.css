@@ -117,18 +117,11 @@ body.sts-indentation-fold-arrows-enabled
   .cm-fold-indicator {
   position: absolute;
   z-index: 3;
-  inset-inline-start: calc(-2 * var(--sts-outline-indent, 16px));
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
   inset-block-start: 50%;
   width: var(--sts-outline-indent, 16px);
   height: var(--sts-outline-indent, 16px);
   transform: translate(-50%, -50%);
-}
-
-body.sts-indentation-fold-arrows-enabled
-  .markdown-source-view.mod-cm6
-  .cm-line.HyperMD-header[data-sts-outline-depth="0"]
-  .cm-fold-indicator {
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
 }
 
 body.sts-indentation-fold-arrows-enabled
