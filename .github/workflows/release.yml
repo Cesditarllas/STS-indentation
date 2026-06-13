@@ -13,10 +13,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Set up Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 20
           cache: npm
@@ -45,11 +45,13 @@ jobs:
           zip -r "../STS-indentation-android-${GITHUB_REF_NAME}.zip" sts-indentation
 
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ github.ref_name }}
-          files: |
-            main.js
-            manifest.json
-            styles.css
-            STS-indentation-android-${{ github.ref_name }}.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes \
+            main.js \
+            manifest.json \
+            styles.css \
+            "STS-indentation-android-${GITHUB_REF_NAME}.zip"
