@@ -182,3 +182,23 @@ body.sts-indentation-enabled:not(.sts-indentation-fold-arrows-enabled)
   visibility: hidden !important;
   pointer-events: none !important;
 }
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  :is(
+    .markdown-source-view.mod-cm6 .cm-fold-indicator,
+    .markdown-preview-view .heading-collapse-indicator
+  ) {
+  min-width: 1.75rem;
+  min-height: 1.75rem;
+  touch-action: manipulation;
+}
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  :is(
+    .markdown-source-view.mod-cm6 .cm-fold-indicator,
+    .markdown-preview-view .heading-collapse-indicator
+  )
+  .svg-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+}
