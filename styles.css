@@ -1,44 +1,69 @@
 :root {
-  --kxc-outline-indent: var(--font-text-size, 16px);
-  --kxc-outline-line-width: 1px;
-  --kxc-outline-line-color: var(--indentation-guide-color, #253545);
+  --sts-outline-indent: var(--font-text-size, 16px);
+  --sts-outline-line-width: 1px;
+  --sts-outline-line-color: var(--indentation-guide-color, #253545);
 }
 
-.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth],
-.markdown-preview-view [data-kxc-outline-depth] {
+.markdown-source-view.mod-cm6 .cm-line[data-sts-outline-depth],
+.markdown-preview-view [data-sts-outline-depth] {
   box-sizing: border-box;
   position: relative;
   padding-inline-start: calc(
-    var(--kxc-outline-depth, 0) * var(--kxc-outline-indent, 16px)
+    var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
   );
 }
 
-.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth]::before,
-.markdown-preview-view [data-kxc-outline-depth]::before {
+.markdown-source-view.mod-cm6 .cm-line[data-sts-outline-depth]::before,
+.markdown-preview-view [data-sts-outline-depth]::before {
   content: "";
+  display: none;
   position: absolute;
   z-index: 0;
   inset-block: 0;
   inset-inline-start: 0;
   width: calc(
-    var(--kxc-outline-depth, 0) * var(--kxc-outline-indent, 16px)
+    var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
   );
   pointer-events: none;
-  background-image: repeating-linear-gradient(
-    to right,
-    transparent 0,
-    transparent calc(
-      var(--kxc-outline-indent, 16px) - var(--kxc-outline-line-width, 1px)
-    ),
-    var(--kxc-outline-line-color, #253545) calc(
-      var(--kxc-outline-indent, 16px) - var(--kxc-outline-line-width, 1px)
-    ),
-    var(--kxc-outline-line-color, #253545) var(--kxc-outline-indent, 16px)
-  );
+  background-image:
+    linear-gradient(var(--sts-guide-1, transparent), var(--sts-guide-1, transparent)),
+    linear-gradient(var(--sts-guide-2, transparent), var(--sts-guide-2, transparent)),
+    linear-gradient(var(--sts-guide-3, transparent), var(--sts-guide-3, transparent)),
+    linear-gradient(var(--sts-guide-4, transparent), var(--sts-guide-4, transparent)),
+    linear-gradient(var(--sts-guide-5, transparent), var(--sts-guide-5, transparent)),
+    linear-gradient(var(--sts-guide-6, transparent), var(--sts-guide-6, transparent));
+  background-position:
+    calc(1 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0,
+    calc(2 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0,
+    calc(3 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0,
+    calc(4 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0,
+    calc(5 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0,
+    calc(6 * var(--sts-outline-indent, 16px) - var(--sts-outline-line-width, 1px)) 0;
+  background-repeat: no-repeat;
+  background-size: var(--sts-outline-line-width, 1px) 100%;
 }
 
-.markdown-source-view.mod-cm6 .cm-line[data-kxc-outline-depth] > *,
-.markdown-preview-view [data-kxc-outline-depth] > * {
+body.sts-indentation-guides-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line[data-sts-outline-depth]::before,
+body.sts-indentation-guides-enabled
+  .markdown-preview-view
+  [data-sts-outline-depth]::before {
+  display: block;
+}
+
+body:not(.sts-indentation-colored-guides)
+  [data-sts-outline-depth] {
+  --sts-guide-1: var(--sts-outline-line-color) !important;
+  --sts-guide-2: var(--sts-outline-line-color) !important;
+  --sts-guide-3: var(--sts-outline-line-color) !important;
+  --sts-guide-4: var(--sts-outline-line-color) !important;
+  --sts-guide-5: var(--sts-outline-line-color) !important;
+  --sts-guide-6: var(--sts-outline-line-color) !important;
+}
+
+.markdown-source-view.mod-cm6 .cm-line[data-sts-outline-depth] > *,
+.markdown-preview-view [data-sts-outline-depth] > * {
   position: relative;
   z-index: 1;
 }

@@ -1,7 +1,7 @@
 {
   "name": "sts-indentation",
-  "version": "1.0.1",
-  "description": "Heading-aware indentation guides for Obsidian.",
+  "version": "1.1.0",
+  "description": "Heading-ancestry indentation guides for Obsidian.",
   "main": "main.js",
   "scripts": {
     "build": "node esbuild.config.mjs production",

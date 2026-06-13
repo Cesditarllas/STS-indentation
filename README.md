@@ -2,9 +2,12 @@
 
 An Obsidian plugin that:
 
-- indents H1-H6 headings by their heading depth;
-- indents body blocks by the nearest preceding heading;
-- draws Outliner-style vertical guides for each active heading depth;
+- indents headings and body blocks by their actual heading ancestry;
+- treats the first heading as depth zero, regardless of whether it is H1-H6;
+- supports lists, tasks, code blocks, images, quotes, tables, math, callouts, and embeds;
+- draws one guide per parent heading;
+- can color each guide from its corresponding parent heading;
+- provides settings for guide visibility and heading-based guide colors;
 - supports Live Preview, Source mode, and Reading view.
 
 ## Install
