@@ -7,7 +7,8 @@ An Obsidian plugin that:
 - supports lists, tasks, code blocks, images, quotes, tables, math, callouts, and embeds;
 - draws one guide per parent heading;
 - can color each guide from its corresponding parent heading;
-- provides settings for guide visibility and heading-based guide colors;
+- can keep native fold arrows visible on their corresponding guide lines;
+- provides a master indentation toggle plus guide, arrow, color, and width settings;
 - supports Live Preview, Source mode, and Reading view.
 
 ## Install

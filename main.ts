@@ -13,19 +13,25 @@ const DEPTH_STYLE = "--sts-outline-depth";
 const WIDGET_ATTRIBUTE = "data-sts-outline-widget";
 const EXTEND_STYLE = "--sts-outline-extend-after";
 const LINE_WIDTH_STYLE = "--sts-outline-line-width";
+const ENABLED_CLASS = "sts-indentation-enabled";
 const GUIDE_CLASS = "sts-indentation-guides-enabled";
 const COLORED_GUIDE_CLASS = "sts-indentation-colored-guides";
+const FOLD_ARROW_CLASS = "sts-indentation-fold-arrows-enabled";
 const MAX_GUIDES = 6;
 
 interface StsIndentationSettings {
+  enableIndentation: boolean;
   showGuides: boolean;
   colorGuidesByHeading: boolean;
+  showFoldArrows: boolean;
   guideLineWidth: number;
 }
 
 const DEFAULT_SETTINGS: StsIndentationSettings = {
+  enableIndentation: true,
   showGuides: true,
   colorGuidesByHeading: true,
+  showFoldArrows: true,
   guideLineWidth: 1
 };
 
@@ -198,7 +204,12 @@ export default class StsIndentationPlugin extends Plugin {
       window.cancelAnimationFrame(this.editorFrame);
     }
 
-    document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
+    document.body.classList.remove(
+      ENABLED_CLASS,
+      GUIDE_CLASS,
+      COLORED_GUIDE_CLASS,
+      FOLD_ARROW_CLASS
+    );
     document.body.style.removeProperty(LINE_WIDTH_STYLE);
     document.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
       this.clearOutlineAttributes(element);
@@ -212,10 +223,21 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private applySettingClasses(): void {
-    document.body.classList.toggle(GUIDE_CLASS, this.settings.showGuides);
+    document.body.classList.toggle(
+      ENABLED_CLASS,
+      this.settings.enableIndentation
+    );
+    document.body.classList.toggle(
+      GUIDE_CLASS,
+      this.settings.enableIndentation && this.settings.showGuides
+    );
     document.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
+    );
+    document.body.classList.toggle(
+      FOLD_ARROW_CLASS,
+      this.settings.enableIndentation && this.settings.showFoldArrows
     );
     document.body.style.setProperty(
       LINE_WIDTH_STYLE,
@@ -428,6 +450,17 @@ class StsIndentationSettingTab extends PluginSettingTab {
     containerEl.empty();
 
     new Setting(containerEl)
+      .setName("启用缩进")
+      .setDesc("控制 STS-indentation 的缩进、层级线和替代折叠箭头。")
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.enableIndentation)
+          .onChange(async value => {
+            await this.plugin.updateSettings({ enableIndentation: value });
+          });
+      });
+
+    new Setting(containerEl)
       .setName("显示层级线")
       .setDesc("在标题父子层级之间显示垂直引导线。")
       .addToggle(toggle => {
@@ -435,6 +468,17 @@ class StsIndentationSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.showGuides)
           .onChange(async value => {
             await this.plugin.updateSettings({ showGuides: value });
+          });
+      });
+
+    new Setting(containerEl)
+      .setName("显示折叠箭头")
+      .setDesc("在层级线上始终显示折叠箭头，并替代 Obsidian 默认的悬停箭头。")
+      .addToggle(toggle => {
+        toggle
+          .setValue(this.plugin.settings.showFoldArrows)
+          .onChange(async value => {
+            await this.plugin.updateSettings({ showFoldArrows: value });
           });
       });
 

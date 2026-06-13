@@ -4,7 +4,8 @@
   --sts-outline-line-color: var(--indentation-guide-color, #253545);
 }
 
-.markdown-source-view.mod-cm6
+body.sts-indentation-enabled
+  .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth] {
   box-sizing: border-box;
   position: relative;
@@ -13,7 +14,8 @@
   ) 0;
 }
 
-.markdown-preview-view [data-sts-outline-depth] {
+body.sts-indentation-enabled
+  .markdown-preview-view [data-sts-outline-depth] {
   box-sizing: border-box;
   position: relative;
   padding-inline-start: calc(
@@ -21,9 +23,11 @@
   );
 }
 
-.markdown-source-view.mod-cm6
+body.sts-indentation-enabled
+  .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before,
-.markdown-preview-view [data-sts-outline-depth]::before {
+body.sts-indentation-enabled
+  .markdown-preview-view [data-sts-outline-depth]::before {
   content: "";
   display: none;
   position: absolute;
@@ -52,14 +56,16 @@
   background-size: var(--sts-outline-line-width, 1px) 100%;
 }
 
-.markdown-source-view.mod-cm6
+body.sts-indentation-enabled
+  .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before {
   inset-inline-start: calc(
     -1 * (var(--sts-outline-depth, 0) + 1) * var(--sts-outline-indent, 16px)
   );
 }
 
-.markdown-preview-view [data-sts-outline-depth]::before {
+body.sts-indentation-enabled
+  .markdown-preview-view [data-sts-outline-depth]::before {
   inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
 }
 
@@ -87,9 +93,99 @@ body:not(.sts-indentation-colored-guides)
   --sts-guide-6: var(--sts-outline-line-color) !important;
 }
 
-.markdown-source-view.mod-cm6
+body.sts-indentation-enabled
+  .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth] > *,
-.markdown-preview-view [data-sts-outline-depth] > * {
+body.sts-indentation-enabled
+  .markdown-preview-view [data-sts-outline-depth] > * {
   position: relative;
   z-index: 1;
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line.HyperMD-header[data-sts-outline-depth]
+  :is(.cm-fold-indicator, .collapse-indicator) {
+  opacity: 1 !important;
+  visibility: visible !important;
+  color: var(--sts-outline-line-color, #253545) !important;
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line.HyperMD-header[data-sts-outline-depth]
+  .cm-fold-indicator {
+  position: absolute;
+  z-index: 3;
+  inset-inline-start: calc(-2 * var(--sts-outline-indent, 16px));
+  inset-block-start: 50%;
+  width: var(--sts-outline-indent, 16px);
+  height: var(--sts-outline-indent, 16px);
+  transform: translate(-50%, -50%);
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line.HyperMD-header[data-sts-outline-depth="0"]
+  .cm-fold-indicator {
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line.HyperMD-header[data-sts-outline-depth]
+  .cm-fold-indicator
+  .collapse-indicator {
+  position: static !important;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-source-view.mod-cm6
+  .cm-line.HyperMD-header[data-sts-outline-depth]
+  .cm-fold-indicator
+  .svg-icon {
+  width: 0.75em;
+  height: 0.75em;
+  stroke: currentColor;
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  :is(h1, h2, h3, h4, h5, h6)[data-sts-outline-depth]
+  .heading-collapse-indicator {
+  position: absolute;
+  z-index: 3;
+  opacity: 1 !important;
+  visibility: visible !important;
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
+  inset-block-start: 50%;
+  width: var(--sts-outline-indent, 16px);
+  height: var(--sts-outline-indent, 16px);
+  transform: translate(-50%, -50%);
+  color: var(--sts-outline-line-color, #253545) !important;
+}
+
+body.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  :is(h1, h2, h3, h4, h5, h6)[data-sts-outline-depth]
+  .heading-collapse-indicator
+  .svg-icon {
+  width: 0.75em;
+  height: 0.75em;
+  stroke: currentColor;
+}
+
+body.sts-indentation-enabled:not(.sts-indentation-fold-arrows-enabled)
+  :is(
+    .markdown-source-view.mod-cm6 .cm-fold-indicator,
+    .markdown-preview-view .heading-collapse-indicator
+  ) {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
 }

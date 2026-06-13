@@ -30,12 +30,16 @@ var DEPTH_STYLE = "--sts-outline-depth";
 var WIDGET_ATTRIBUTE = "data-sts-outline-widget";
 var EXTEND_STYLE = "--sts-outline-extend-after";
 var LINE_WIDTH_STYLE = "--sts-outline-line-width";
+var ENABLED_CLASS = "sts-indentation-enabled";
 var GUIDE_CLASS = "sts-indentation-guides-enabled";
 var COLORED_GUIDE_CLASS = "sts-indentation-colored-guides";
+var FOLD_ARROW_CLASS = "sts-indentation-fold-arrows-enabled";
 var MAX_GUIDES = 6;
 var DEFAULT_SETTINGS = {
+  enableIndentation: true,
   showGuides: true,
   colorGuidesByHeading: true,
+  showFoldArrows: true,
   guideLineWidth: 1
 };
 function headingLevel(text) {
@@ -184,7 +188,12 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     if (this.editorFrame !== null) {
       window.cancelAnimationFrame(this.editorFrame);
     }
-    document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
+    document.body.classList.remove(
+      ENABLED_CLASS,
+      GUIDE_CLASS,
+      COLORED_GUIDE_CLASS,
+      FOLD_ARROW_CLASS
+    );
     document.body.style.removeProperty(LINE_WIDTH_STYLE);
     document.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
       this.clearOutlineAttributes(element);
@@ -196,10 +205,21 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.applySettingClasses();
   }
   applySettingClasses() {
-    document.body.classList.toggle(GUIDE_CLASS, this.settings.showGuides);
+    document.body.classList.toggle(
+      ENABLED_CLASS,
+      this.settings.enableIndentation
+    );
+    document.body.classList.toggle(
+      GUIDE_CLASS,
+      this.settings.enableIndentation && this.settings.showGuides
+    );
     document.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
+    );
+    document.body.classList.toggle(
+      FOLD_ARROW_CLASS,
+      this.settings.enableIndentation && this.settings.showFoldArrows
     );
     document.body.style.setProperty(
       LINE_WIDTH_STYLE,
@@ -352,9 +372,19 @@ var StsIndentationSettingTab = class extends import_obsidian.PluginSettingTab {
   display() {
     const { containerEl } = this;
     containerEl.empty();
+    new import_obsidian.Setting(containerEl).setName("\u542F\u7528\u7F29\u8FDB").setDesc("\u63A7\u5236 STS-indentation \u7684\u7F29\u8FDB\u3001\u5C42\u7EA7\u7EBF\u548C\u66FF\u4EE3\u6298\u53E0\u7BAD\u5934\u3002").addToggle((toggle) => {
+      toggle.setValue(this.plugin.settings.enableIndentation).onChange(async (value) => {
+        await this.plugin.updateSettings({ enableIndentation: value });
+      });
+    });
     new import_obsidian.Setting(containerEl).setName("\u663E\u793A\u5C42\u7EA7\u7EBF").setDesc("\u5728\u6807\u9898\u7236\u5B50\u5C42\u7EA7\u4E4B\u95F4\u663E\u793A\u5782\u76F4\u5F15\u5BFC\u7EBF\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showGuides).onChange(async (value) => {
         await this.plugin.updateSettings({ showGuides: value });
+      });
+    });
+    new import_obsidian.Setting(containerEl).setName("\u663E\u793A\u6298\u53E0\u7BAD\u5934").setDesc("\u5728\u5C42\u7EA7\u7EBF\u4E0A\u59CB\u7EC8\u663E\u793A\u6298\u53E0\u7BAD\u5934\uFF0C\u5E76\u66FF\u4EE3 Obsidian \u9ED8\u8BA4\u7684\u60AC\u505C\u7BAD\u5934\u3002").addToggle((toggle) => {
+      toggle.setValue(this.plugin.settings.showFoldArrows).onChange(async (value) => {
+        await this.plugin.updateSettings({ showFoldArrows: value });
       });
     });
     new import_obsidian.Setting(containerEl).setName("\u5C42\u7EA7\u7EBF\u989C\u8272\u8DDF\u968F\u6807\u9898").setDesc("\u6BCF\u6761\u5C42\u7EA7\u7EBF\u4F7F\u7528\u5BF9\u5E94\u7236\u6807\u9898\u7684\u4E3B\u9898\u989C\u8272\u3002\u5173\u95ED\u540E\u7EDF\u4E00\u4F7F\u7528\u4E3B\u9898\u7684\u7F29\u8FDB\u7EBF\u989C\u8272\u3002").addToggle((toggle) => {
