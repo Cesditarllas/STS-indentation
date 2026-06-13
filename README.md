@@ -1,4 +1,4 @@
-# KXC Heading Outline
+# STS-indentation
 
 An Obsidian plugin that:
 
@@ -12,10 +12,10 @@ An Obsidian plugin that:
 Copy `main.js`, `manifest.json`, and `styles.css` into:
 
 ```text
-.obsidian/plugins/kxc-heading-outline/
+.obsidian/plugins/STS-indentation/
 ```
 
-Then enable **KXC Heading Outline** in Obsidian's Community plugins settings.
+Then enable **STS-indentation** in Obsidian's Community plugins settings.
 
 ## Build
 

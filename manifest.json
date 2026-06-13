@@ -1,6 +1,6 @@
 {
-  "id": "kxc-heading-outline",
-  "name": "KXC Heading Outline",
+  "id": "sts-indentation",
+  "name": "STS-indentation",
   "version": "1.0.0",
   "minAppVersion": "1.5.0",
   "description": "Indent headings and body text by heading depth, with Outliner-style guide lines.",

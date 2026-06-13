@@ -1,5 +1,5 @@
 {
-  "name": "kxc-heading-outline",
+  "name": "sts-indentation",
   "version": "1.0.0",
   "description": "Heading-aware indentation guides for Obsidian.",
   "main": "main.js",
