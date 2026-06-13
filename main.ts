@@ -130,6 +130,8 @@ export default class StsIndentationPlugin extends Plugin {
   settings: StsIndentationSettings = DEFAULT_SETTINGS;
   private readingObserver: MutationObserver | null = null;
   private readingFrame: number | null = null;
+  private editorObserver: MutationObserver | null = null;
+  private editorFrame: number | null = null;
 
   async onload(): Promise<void> {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -144,12 +146,20 @@ export default class StsIndentationPlugin extends Plugin {
     this.registerEvent(
       this.app.workspace.on("layout-change", () => {
         this.scheduleReadingViewUpdate();
+        this.scheduleEditorWidgetUpdate();
       })
     );
 
     this.registerEvent(
       this.app.workspace.on("file-open", () => {
         this.scheduleReadingViewUpdate();
+        this.scheduleEditorWidgetUpdate();
+      })
+    );
+
+    this.registerEvent(
+      this.app.workspace.on("editor-change", () => {
+        this.scheduleEditorWidgetUpdate();
       })
     );
 
@@ -162,12 +172,25 @@ export default class StsIndentationPlugin extends Plugin {
     });
     this.register(() => this.readingObserver?.disconnect());
 
+    this.editorObserver = new MutationObserver(() => {
+      this.scheduleEditorWidgetUpdate();
+    });
+    this.editorObserver.observe(this.app.workspace.containerEl, {
+      childList: true,
+      subtree: true
+    });
+    this.register(() => this.editorObserver?.disconnect());
+
     this.scheduleReadingViewUpdate();
+    this.scheduleEditorWidgetUpdate();
   }
 
   onunload(): void {
     if (this.readingFrame !== null) {
       window.cancelAnimationFrame(this.readingFrame);
+    }
+    if (this.editorFrame !== null) {
+      window.cancelAnimationFrame(this.editorFrame);
     }
 
     document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
@@ -199,6 +222,76 @@ export default class StsIndentationPlugin extends Plugin {
       this.readingFrame = null;
       this.updateReadingViews();
     });
+  }
+
+  private scheduleEditorWidgetUpdate(): void {
+    if (this.editorFrame !== null) {
+      return;
+    }
+
+    this.editorFrame = window.requestAnimationFrame(() => {
+      this.editorFrame = null;
+      this.updateEditorWidgets();
+    });
+  }
+
+  private updateEditorWidgets(): void {
+    document
+      .querySelectorAll<HTMLElement>(".markdown-source-view.mod-cm6 .cm-content")
+      .forEach(container => {
+        container
+          .querySelectorAll<HTMLElement>(
+            ".cm-embed-block, .image-embed, .internal-embed.image-embed"
+          )
+          .forEach(widget => {
+            const block = widget.closest<HTMLElement>(".cm-embed-block") ?? widget;
+            if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+              return;
+            }
+
+            const line = this.findWidgetSourceLine(block);
+            if (line === null) {
+              return;
+            }
+
+            this.copyOutlineAttributes(line, block);
+          });
+      });
+  }
+
+  private findWidgetSourceLine(widget: HTMLElement): HTMLElement | null {
+    let sibling = widget.previousElementSibling;
+    while (sibling !== null) {
+      if (
+        sibling instanceof HTMLElement &&
+        sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)
+      ) {
+        return sibling;
+      }
+      sibling = sibling.previousElementSibling;
+    }
+
+    const parentLine = widget.closest<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`);
+    return parentLine;
+  }
+
+  private copyOutlineAttributes(
+    source: HTMLElement,
+    target: HTMLElement
+  ): void {
+    const depth = source.getAttribute(DEPTH_ATTRIBUTE);
+    if (depth === null) {
+      return;
+    }
+
+    target.setAttribute(DEPTH_ATTRIBUTE, depth);
+    target.style.setProperty(DEPTH_STYLE, depth);
+    for (let index = 1; index <= MAX_GUIDES; index += 1) {
+      target.style.setProperty(
+        `--sts-guide-${index}`,
+        source.style.getPropertyValue(`--sts-guide-${index}`) || "transparent"
+      );
+    }
   }
 
   private updateReadingViews(): void {

@@ -1,7 +1,7 @@
 {
   "id": "sts-indentation",
   "name": "STS-indentation",
-  "version": "1.1.0",
+  "version": "1.1.2",
   "minAppVersion": "1.5.0",
   "description": "Indent content by its heading ancestry, with configurable colored guide lines.",
   "author": "Cesditarllas",

@@ -120,6 +120,8 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.settings = DEFAULT_SETTINGS;
     this.readingObserver = null;
     this.readingFrame = null;
+    this.editorObserver = null;
+    this.editorFrame = null;
   }
   async onload() {
     this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -132,11 +134,18 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.registerEvent(
       this.app.workspace.on("layout-change", () => {
         this.scheduleReadingViewUpdate();
+        this.scheduleEditorWidgetUpdate();
       })
     );
     this.registerEvent(
       this.app.workspace.on("file-open", () => {
         this.scheduleReadingViewUpdate();
+        this.scheduleEditorWidgetUpdate();
+      })
+    );
+    this.registerEvent(
+      this.app.workspace.on("editor-change", () => {
+        this.scheduleEditorWidgetUpdate();
       })
     );
     this.readingObserver = new MutationObserver(() => {
@@ -150,11 +159,26 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       var _a;
       return (_a = this.readingObserver) == null ? void 0 : _a.disconnect();
     });
+    this.editorObserver = new MutationObserver(() => {
+      this.scheduleEditorWidgetUpdate();
+    });
+    this.editorObserver.observe(this.app.workspace.containerEl, {
+      childList: true,
+      subtree: true
+    });
+    this.register(() => {
+      var _a;
+      return (_a = this.editorObserver) == null ? void 0 : _a.disconnect();
+    });
     this.scheduleReadingViewUpdate();
+    this.scheduleEditorWidgetUpdate();
   }
   onunload() {
     if (this.readingFrame !== null) {
       window.cancelAnimationFrame(this.readingFrame);
+    }
+    if (this.editorFrame !== null) {
+      window.cancelAnimationFrame(this.editorFrame);
     }
     document.body.classList.remove(GUIDE_CLASS, COLORED_GUIDE_CLASS);
     document.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
@@ -181,6 +205,58 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       this.readingFrame = null;
       this.updateReadingViews();
     });
+  }
+  scheduleEditorWidgetUpdate() {
+    if (this.editorFrame !== null) {
+      return;
+    }
+    this.editorFrame = window.requestAnimationFrame(() => {
+      this.editorFrame = null;
+      this.updateEditorWidgets();
+    });
+  }
+  updateEditorWidgets() {
+    document.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
+      container.querySelectorAll(
+        ".cm-embed-block, .image-embed, .internal-embed.image-embed"
+      ).forEach((widget) => {
+        var _a;
+        const block = (_a = widget.closest(".cm-embed-block")) != null ? _a : widget;
+        if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+          return;
+        }
+        const line = this.findWidgetSourceLine(block);
+        if (line === null) {
+          return;
+        }
+        this.copyOutlineAttributes(line, block);
+      });
+    });
+  }
+  findWidgetSourceLine(widget) {
+    let sibling = widget.previousElementSibling;
+    while (sibling !== null) {
+      if (sibling instanceof HTMLElement && sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+        return sibling;
+      }
+      sibling = sibling.previousElementSibling;
+    }
+    const parentLine = widget.closest(`.cm-line[${DEPTH_ATTRIBUTE}]`);
+    return parentLine;
+  }
+  copyOutlineAttributes(source, target) {
+    const depth = source.getAttribute(DEPTH_ATTRIBUTE);
+    if (depth === null) {
+      return;
+    }
+    target.setAttribute(DEPTH_ATTRIBUTE, depth);
+    target.style.setProperty(DEPTH_STYLE, depth);
+    for (let index = 1; index <= MAX_GUIDES; index += 1) {
+      target.style.setProperty(
+        `--sts-guide-${index}`,
+        source.style.getPropertyValue(`--sts-guide-${index}`) || "transparent"
+      );
+    }
   }
   updateReadingViews() {
     document.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container));
