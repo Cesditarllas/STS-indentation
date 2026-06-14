@@ -212,3 +212,65 @@ body.is-mobile.sts-indentation-fold-arrows-enabled
   width: 0.875rem;
   height: 0.875rem;
 }
+
+body.is-mobile.sts-indentation-enabled
+  .markdown-source-view.mod-cm6
+  :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth] {
+  --sts-mobile-offset: calc(
+    var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
+  );
+  inline-size: calc(100% - var(--sts-mobile-offset));
+  max-inline-size: calc(100% - var(--sts-mobile-offset));
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+
+body.is-mobile.sts-indentation-enabled
+  :is(
+    .markdown-source-view.mod-cm6,
+    .markdown-preview-view
+  )
+  :is(
+    .cm-embed-block,
+    .image-embed,
+    .internal-embed,
+    .markdown-embed,
+    .callout,
+    blockquote,
+    pre,
+    table
+  ) {
+  box-sizing: border-box;
+  max-inline-size: 100%;
+  min-inline-size: 0;
+}
+
+body.is-mobile.sts-indentation-enabled
+  :is(
+    .markdown-source-view.mod-cm6,
+    .markdown-preview-view
+  )
+  :is(img, video, canvas, iframe) {
+  block-size: auto;
+  max-inline-size: 100%;
+}
+
+body.is-mobile.sts-indentation-enabled
+  :is(
+    .markdown-source-view.mod-cm6,
+    .markdown-preview-view
+  )
+  :is(pre, table) {
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+}
+
+body.is-mobile.sts-indentation-enabled
+  :is(
+    .markdown-source-view.mod-cm6,
+    .markdown-preview-view
+  )
+  :is(p, li, blockquote, td, th, code) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
