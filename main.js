@@ -42,6 +42,19 @@ var DEFAULT_SETTINGS = {
   showFoldArrows: true,
   guideLineWidth: 1
 };
+function loadSettings(data) {
+  if (typeof data !== "object" || data === null) {
+    return { ...DEFAULT_SETTINGS };
+  }
+  const saved = data;
+  return {
+    enableIndentation: typeof saved.enableIndentation === "boolean" ? saved.enableIndentation : DEFAULT_SETTINGS.enableIndentation,
+    showGuides: typeof saved.showGuides === "boolean" ? saved.showGuides : DEFAULT_SETTINGS.showGuides,
+    colorGuidesByHeading: typeof saved.colorGuidesByHeading === "boolean" ? saved.colorGuidesByHeading : DEFAULT_SETTINGS.colorGuidesByHeading,
+    showFoldArrows: typeof saved.showFoldArrows === "boolean" ? saved.showFoldArrows : DEFAULT_SETTINGS.showFoldArrows,
+    guideLineWidth: typeof saved.guideLineWidth === "number" ? Math.min(2, Math.max(0.1, saved.guideLineWidth)) : DEFAULT_SETTINGS.guideLineWidth
+  };
+}
 function headingLevel(text) {
   const match = text.match(/^\s{0,3}(#{1,6})(?:\s+|$)/);
   return match ? match[1].length : null;
@@ -57,7 +70,7 @@ function outlineAttributes(ancestors) {
   for (let index = 0; index < MAX_GUIDES; index += 1) {
     const ancestor = ancestors[index];
     styles.push(
-      `--sts-guide-${index + 1}:${ancestor ? headingColor(ancestor.level) : "transparent"}`
+      `--sts-heading-guide-${index + 1}:${ancestor ? headingColor(ancestor.level) : "transparent"}`
     );
   }
   attributes.style = styles.join(";");
@@ -132,7 +145,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.editorFrame = null;
   }
   async onload() {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = loadSettings(await this.loadData());
     this.applySettingClasses();
     this.addSettingTab(new StsIndentationSettingTab(this.app, this));
     this.registerEditorExtension(headingOutlineEditorExtension);
@@ -188,14 +201,14 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     if (this.editorFrame !== null) {
       window.cancelAnimationFrame(this.editorFrame);
     }
-    document.body.classList.remove(
+    activeDocument.body.classList.remove(
       ENABLED_CLASS,
       GUIDE_CLASS,
       COLORED_GUIDE_CLASS,
       FOLD_ARROW_CLASS
     );
-    document.body.style.removeProperty(LINE_WIDTH_STYLE);
-    document.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
+    activeDocument.body.style.removeProperty(LINE_WIDTH_STYLE);
+    activeDocument.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
       this.clearOutlineAttributes(element);
     });
   }
@@ -205,23 +218,23 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.applySettingClasses();
   }
   applySettingClasses() {
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       ENABLED_CLASS,
       this.settings.enableIndentation
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       GUIDE_CLASS,
       this.settings.enableIndentation && this.settings.showGuides
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       FOLD_ARROW_CLASS,
       this.settings.enableIndentation && this.settings.showFoldArrows
     );
-    document.body.style.setProperty(
+    activeDocument.body.style.setProperty(
       LINE_WIDTH_STYLE,
       `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
     );
@@ -245,8 +258,8 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     });
   }
   updateEditorWidgets() {
-    document.querySelectorAll(`.cm-line[${DEPTH_ATTRIBUTE}]`).forEach((line) => line.style.removeProperty(EXTEND_STYLE));
-    document.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
+    activeDocument.querySelectorAll(`.cm-line[${DEPTH_ATTRIBUTE}]`).forEach((line) => line.style.removeProperty(EXTEND_STYLE));
+    activeDocument.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
       container.querySelectorAll(
         ".cm-embed-block, .image-embed, .internal-embed.image-embed"
       ).forEach((widget) => {
@@ -279,7 +292,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     }
     let sibling = widget.previousElementSibling;
     while (sibling !== null) {
-      if (sibling instanceof HTMLElement && sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+      if (sibling.instanceOf(HTMLElement) && sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
         return sibling;
       }
       sibling = sibling.previousElementSibling;
@@ -295,13 +308,13 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     target.style.setProperty(DEPTH_STYLE, depth);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       target.style.setProperty(
-        `--sts-guide-${index}`,
-        source.style.getPropertyValue(`--sts-guide-${index}`) || "transparent"
+        `--sts-heading-guide-${index}`,
+        source.style.getPropertyValue(`--sts-heading-guide-${index}`) || "transparent"
       );
     }
   }
   updateReadingViews() {
-    document.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container));
+    activeDocument.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container));
   }
   updateReadingContainer(container) {
     const ancestors = [];
@@ -326,7 +339,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
         return;
       }
       Array.from(section.children).forEach((child) => {
-        if (child instanceof HTMLElement && !child.classList.contains("mod-header")) {
+        if (child.instanceOf(HTMLElement) && !child.classList.contains("mod-header")) {
           blocks.push(child);
         }
       });
@@ -335,7 +348,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       return blocks;
     }
     return Array.from(container.children).filter(
-      (child) => child instanceof HTMLElement && !child.classList.contains("mod-header")
+      (child) => child.instanceOf(HTMLElement) && !child.classList.contains("mod-header")
     );
   }
   readingHeadingLevel(element) {
@@ -349,7 +362,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     for (let index = 0; index < MAX_GUIDES; index += 1) {
       const ancestor = ancestors[index];
       element.style.setProperty(
-        `--sts-guide-${index + 1}`,
+        `--sts-heading-guide-${index + 1}`,
         ancestor ? headingColor(ancestor.level) : "transparent"
       );
     }
@@ -360,7 +373,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     element.style.removeProperty(DEPTH_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
-      element.style.removeProperty(`--sts-guide-${index}`);
+      element.style.removeProperty(`--sts-heading-guide-${index}`);
     }
   }
 };
@@ -393,7 +406,7 @@ var StsIndentationSettingTab = class extends import_obsidian.PluginSettingTab {
       });
     });
     new import_obsidian.Setting(containerEl).setName("\u5C42\u7EA7\u7EBF\u7C97\u7EC6").setDesc("\u8C03\u6574\u5C42\u7EA7\u7EBF\u5BBD\u5EA6\uFF0C\u8303\u56F4\u4E3A 0.1\u20132.0 px\u3002").addSlider((slider) => {
-      slider.setLimits(0.1, 2, 0.1).setDynamicTooltip().setValue(this.plugin.settings.guideLineWidth).onChange(async (value) => {
+      slider.setLimits(0.1, 2, 0.1).setValue(this.plugin.settings.guideLineWidth).onChange(async (value) => {
         await this.plugin.updateSettings({ guideLineWidth: value });
       });
     });

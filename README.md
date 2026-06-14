@@ -24,7 +24,7 @@ Then enable **STS-indentation** in Obsidian's Community plugins settings.
 
 ### Android manual installation
 
-1. Download the release ZIP or the three release assets:
+1. Download the three release assets:
    `main.js`, `manifest.json`, and `styles.css`.
 2. Create this folder inside the vault:
 
@@ -47,7 +47,6 @@ prefix, for example `1.2.4`. Each release contains:
 - `main.js`
 - `manifest.json`
 - `styles.css`
-- `STS-indentation-android-<version>.zip`
 
 ## Build
 

@@ -1,6 +1,6 @@
 {
   "name": "sts-indentation",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "description": "Heading-ancestry indentation guides for Obsidian.",
   "main": "main.js",
   "scripts": {
@@ -19,7 +19,6 @@
     "@codemirror/state": "6.5.0",
     "@codemirror/view": "6.38.6",
     "@types/node": "^24.0.3",
-    "builtin-modules": "^4.0.0",
     "esbuild": "^0.25.5",
     "obsidian": "1.13.1",
     "typescript": "^5.8.3"

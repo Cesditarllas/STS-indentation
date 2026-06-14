@@ -39,12 +39,12 @@ body.sts-indentation-enabled
   );
   pointer-events: none;
   background-image:
-    linear-gradient(var(--sts-guide-1, transparent), var(--sts-guide-1, transparent)),
-    linear-gradient(var(--sts-guide-2, transparent), var(--sts-guide-2, transparent)),
-    linear-gradient(var(--sts-guide-3, transparent), var(--sts-guide-3, transparent)),
-    linear-gradient(var(--sts-guide-4, transparent), var(--sts-guide-4, transparent)),
-    linear-gradient(var(--sts-guide-5, transparent), var(--sts-guide-5, transparent)),
-    linear-gradient(var(--sts-guide-6, transparent), var(--sts-guide-6, transparent));
+    linear-gradient(var(--sts-render-guide-1, transparent), var(--sts-render-guide-1, transparent)),
+    linear-gradient(var(--sts-render-guide-2, transparent), var(--sts-render-guide-2, transparent)),
+    linear-gradient(var(--sts-render-guide-3, transparent), var(--sts-render-guide-3, transparent)),
+    linear-gradient(var(--sts-render-guide-4, transparent), var(--sts-render-guide-4, transparent)),
+    linear-gradient(var(--sts-render-guide-5, transparent), var(--sts-render-guide-5, transparent)),
+    linear-gradient(var(--sts-render-guide-6, transparent), var(--sts-render-guide-6, transparent));
   background-position:
     0 0,
     calc(1 * var(--sts-outline-indent, 16px)) 0,
@@ -85,12 +85,22 @@ body.sts-indentation-guides-enabled
 
 body:not(.sts-indentation-colored-guides)
   [data-sts-outline-depth] {
-  --sts-guide-1: var(--sts-outline-line-color) !important;
-  --sts-guide-2: var(--sts-outline-line-color) !important;
-  --sts-guide-3: var(--sts-outline-line-color) !important;
-  --sts-guide-4: var(--sts-outline-line-color) !important;
-  --sts-guide-5: var(--sts-outline-line-color) !important;
-  --sts-guide-6: var(--sts-outline-line-color) !important;
+  --sts-render-guide-1: var(--sts-outline-line-color);
+  --sts-render-guide-2: var(--sts-outline-line-color);
+  --sts-render-guide-3: var(--sts-outline-line-color);
+  --sts-render-guide-4: var(--sts-outline-line-color);
+  --sts-render-guide-5: var(--sts-outline-line-color);
+  --sts-render-guide-6: var(--sts-outline-line-color);
+}
+
+body.sts-indentation-colored-guides
+  [data-sts-outline-depth] {
+  --sts-render-guide-1: var(--sts-heading-guide-1, transparent);
+  --sts-render-guide-2: var(--sts-heading-guide-2, transparent);
+  --sts-render-guide-3: var(--sts-heading-guide-3, transparent);
+  --sts-render-guide-4: var(--sts-heading-guide-4, transparent);
+  --sts-render-guide-5: var(--sts-heading-guide-5, transparent);
+  --sts-render-guide-6: var(--sts-heading-guide-6, transparent);
 }
 
 body.sts-indentation-enabled

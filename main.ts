@@ -35,6 +35,36 @@ const DEFAULT_SETTINGS: StsIndentationSettings = {
   guideLineWidth: 1
 };
 
+function loadSettings(data: unknown): StsIndentationSettings {
+  if (typeof data !== "object" || data === null) {
+    return { ...DEFAULT_SETTINGS };
+  }
+
+  const saved = data as Partial<Record<keyof StsIndentationSettings, unknown>>;
+  return {
+    enableIndentation:
+      typeof saved.enableIndentation === "boolean"
+        ? saved.enableIndentation
+        : DEFAULT_SETTINGS.enableIndentation,
+    showGuides:
+      typeof saved.showGuides === "boolean"
+        ? saved.showGuides
+        : DEFAULT_SETTINGS.showGuides,
+    colorGuidesByHeading:
+      typeof saved.colorGuidesByHeading === "boolean"
+        ? saved.colorGuidesByHeading
+        : DEFAULT_SETTINGS.colorGuidesByHeading,
+    showFoldArrows:
+      typeof saved.showFoldArrows === "boolean"
+        ? saved.showFoldArrows
+        : DEFAULT_SETTINGS.showFoldArrows,
+    guideLineWidth:
+      typeof saved.guideLineWidth === "number"
+        ? Math.min(2, Math.max(0.1, saved.guideLineWidth))
+        : DEFAULT_SETTINGS.guideLineWidth
+  };
+}
+
 interface HeadingAncestor {
   level: number;
 }
@@ -57,7 +87,7 @@ function outlineAttributes(ancestors: HeadingAncestor[]): Record<string, string>
   for (let index = 0; index < MAX_GUIDES; index += 1) {
     const ancestor = ancestors[index];
     styles.push(
-      `--sts-guide-${index + 1}:${ancestor ? headingColor(ancestor.level) : "transparent"}`
+      `--sts-heading-guide-${index + 1}:${ancestor ? headingColor(ancestor.level) : "transparent"}`
     );
   }
 
@@ -145,7 +175,7 @@ export default class StsIndentationPlugin extends Plugin {
   private editorFrame: number | null = null;
 
   async onload(): Promise<void> {
-    this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
+    this.settings = loadSettings(await this.loadData() as unknown);
     this.applySettingClasses();
     this.addSettingTab(new StsIndentationSettingTab(this.app, this));
     this.registerEditorExtension(headingOutlineEditorExtension);
@@ -204,14 +234,14 @@ export default class StsIndentationPlugin extends Plugin {
       window.cancelAnimationFrame(this.editorFrame);
     }
 
-    document.body.classList.remove(
+    activeDocument.body.classList.remove(
       ENABLED_CLASS,
       GUIDE_CLASS,
       COLORED_GUIDE_CLASS,
       FOLD_ARROW_CLASS
     );
-    document.body.style.removeProperty(LINE_WIDTH_STYLE);
-    document.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
+    activeDocument.body.style.removeProperty(LINE_WIDTH_STYLE);
+    activeDocument.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
       this.clearOutlineAttributes(element);
     });
   }
@@ -223,23 +253,23 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private applySettingClasses(): void {
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       ENABLED_CLASS,
       this.settings.enableIndentation
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       GUIDE_CLASS,
       this.settings.enableIndentation && this.settings.showGuides
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       COLORED_GUIDE_CLASS,
       this.settings.colorGuidesByHeading
     );
-    document.body.classList.toggle(
+    activeDocument.body.classList.toggle(
       FOLD_ARROW_CLASS,
       this.settings.enableIndentation && this.settings.showFoldArrows
     );
-    document.body.style.setProperty(
+    activeDocument.body.style.setProperty(
       LINE_WIDTH_STYLE,
       `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
     );
@@ -268,11 +298,11 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private updateEditorWidgets(): void {
-    document
+    activeDocument
       .querySelectorAll<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`)
       .forEach(line => line.style.removeProperty(EXTEND_STYLE));
 
-    document
+    activeDocument
       .querySelectorAll<HTMLElement>(".markdown-source-view.mod-cm6 .cm-content")
       .forEach(container => {
         container
@@ -315,7 +345,7 @@ export default class StsIndentationPlugin extends Plugin {
     let sibling = widget.previousElementSibling;
     while (sibling !== null) {
       if (
-        sibling instanceof HTMLElement &&
+        sibling.instanceOf(HTMLElement) &&
         sibling.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)
       ) {
         return sibling;
@@ -339,14 +369,14 @@ export default class StsIndentationPlugin extends Plugin {
     target.style.setProperty(DEPTH_STYLE, depth);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       target.style.setProperty(
-        `--sts-guide-${index}`,
-        source.style.getPropertyValue(`--sts-guide-${index}`) || "transparent"
+        `--sts-heading-guide-${index}`,
+        source.style.getPropertyValue(`--sts-heading-guide-${index}`) || "transparent"
       );
     }
   }
 
   private updateReadingViews(): void {
-    document
+    activeDocument
       .querySelectorAll<HTMLElement>(".markdown-preview-view .markdown-preview-sizer")
       .forEach(container => this.updateReadingContainer(container));
   }
@@ -386,7 +416,7 @@ export default class StsIndentationPlugin extends Plugin {
 
         Array.from(section.children).forEach(child => {
           if (
-            child instanceof HTMLElement &&
+            child.instanceOf(HTMLElement) &&
             !child.classList.contains("mod-header")
           ) {
             blocks.push(child);
@@ -400,7 +430,7 @@ export default class StsIndentationPlugin extends Plugin {
 
     return Array.from(container.children).filter(
       (child): child is HTMLElement =>
-        child instanceof HTMLElement &&
+        child.instanceOf(HTMLElement) &&
         !child.classList.contains("mod-header")
     );
   }
@@ -423,7 +453,7 @@ export default class StsIndentationPlugin extends Plugin {
     for (let index = 0; index < MAX_GUIDES; index += 1) {
       const ancestor = ancestors[index];
       element.style.setProperty(
-        `--sts-guide-${index + 1}`,
+        `--sts-heading-guide-${index + 1}`,
         ancestor ? headingColor(ancestor.level) : "transparent"
       );
     }
@@ -435,7 +465,7 @@ export default class StsIndentationPlugin extends Plugin {
     element.style.removeProperty(DEPTH_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
-      element.style.removeProperty(`--sts-guide-${index}`);
+      element.style.removeProperty(`--sts-heading-guide-${index}`);
     }
   }
 }
@@ -499,7 +529,6 @@ class StsIndentationSettingTab extends PluginSettingTab {
       .addSlider(slider => {
         slider
           .setLimits(0.1, 2, 0.1)
-          .setDynamicTooltip()
           .setValue(this.plugin.settings.guideLineWidth)
           .onChange(async value => {
             await this.plugin.updateSettings({ guideLineWidth: value });
