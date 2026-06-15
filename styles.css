@@ -32,7 +32,7 @@ body.sts-indentation-enabled
   display: none;
   position: absolute;
   z-index: 0;
-  inset-block-start: 0;
+  inset-block-start: calc(-1 * var(--sts-outline-extend-before, 0px));
   inset-block-end: calc(-1 * var(--sts-outline-extend-after, 0px));
   width: calc(
     var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
@@ -211,6 +211,62 @@ body.is-mobile.sts-indentation-fold-arrows-enabled
   .svg-icon {
   width: 0.875rem;
   height: 0.875rem;
+}
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  [data-sts-mobile-heading-level] {
+  position: relative;
+}
+
+body.is-mobile
+  .markdown-preview-view
+  .sts-mobile-fold-indicator {
+  display: none;
+}
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  .sts-mobile-fold-indicator {
+  appearance: none;
+  position: absolute;
+  z-index: 4;
+  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px) + 3px);
+  inset-block-start: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--sts-outline-line-color, #253545);
+  transform: translate(-50%, -25%);
+  touch-action: manipulation;
+}
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  .sts-mobile-fold-indicator
+  .svg-icon {
+  width: 0.875rem;
+  height: 0.875rem;
+  transition: transform 120ms ease;
+}
+
+body.is-mobile.sts-indentation-fold-arrows-enabled
+  .markdown-preview-view
+  [data-sts-mobile-collapsed="true"]
+  > .sts-mobile-fold-indicator
+  .svg-icon {
+  transform: rotate(-90deg);
+}
+
+body.is-mobile
+  .markdown-preview-view
+  .sts-mobile-section-hidden {
+  display: none;
 }
 
 body.is-mobile.sts-indentation-enabled

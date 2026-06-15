@@ -28,7 +28,10 @@ var import_obsidian = require("obsidian");
 var DEPTH_ATTRIBUTE = "data-sts-outline-depth";
 var DEPTH_STYLE = "--sts-outline-depth";
 var WIDGET_ATTRIBUTE = "data-sts-outline-widget";
+var MOBILE_HEADING_ATTRIBUTE = "data-sts-mobile-heading-level";
+var MOBILE_COLLAPSED_ATTRIBUTE = "data-sts-mobile-collapsed";
 var EXTEND_STYLE = "--sts-outline-extend-after";
+var EXTEND_BEFORE_STYLE = "--sts-outline-extend-before";
 var LINE_WIDTH_STYLE = "--sts-outline-line-width";
 var ENABLED_CLASS = "sts-indentation-enabled";
 var GUIDE_CLASS = "sts-indentation-guides-enabled";
@@ -216,6 +219,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.settings = Object.assign({}, this.settings, settings);
     await this.saveData(this.settings);
     this.applySettingClasses();
+    this.scheduleReadingViewUpdate();
   }
   applySettingClasses() {
     activeDocument.body.classList.toggle(
@@ -319,7 +323,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   updateReadingContainer(container) {
     const ancestors = [];
     const blocks = this.getReadingBlocks(container);
-    blocks.forEach((element) => {
+    blocks.forEach((element, index) => {
       const level = this.readingHeadingLevel(element);
       if (level !== null) {
         while (ancestors.length > 0 && ancestors[ancestors.length - 1].level >= level) {
@@ -329,6 +333,82 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
         ancestors.push({ level });
       } else {
         this.setOutlineAttributes(element, ancestors);
+      }
+      this.bridgeReadingBlockGap(blocks, index);
+      this.updateMobileFoldArrow(container, element, level);
+    });
+    this.applyMobileCollapsedSections(blocks);
+  }
+  bridgeReadingBlockGap(blocks, index) {
+    const element = blocks[index];
+    element.style.removeProperty(EXTEND_BEFORE_STYLE);
+    if (!import_obsidian.Platform.isMobile || index === 0) {
+      return;
+    }
+    const previous = blocks[index - 1];
+    const gap = Math.max(
+      0,
+      element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
+    );
+    element.style.setProperty(EXTEND_BEFORE_STYLE, `${gap}px`);
+  }
+  updateMobileFoldArrow(container, element, level) {
+    if (!import_obsidian.Platform.isMobile || level === null) {
+      return;
+    }
+    element.setAttribute(MOBILE_HEADING_ATTRIBUTE, String(level));
+    if (element.querySelector(".heading-collapse-indicator") !== null) {
+      return;
+    }
+    let arrow = element.querySelector(
+      ":scope > .sts-mobile-fold-indicator"
+    );
+    if (arrow !== null) {
+      return;
+    }
+    arrow = element.ownerDocument.createElement("button");
+    arrow.type = "button";
+    arrow.className = "sts-mobile-fold-indicator";
+    arrow.setAttribute("aria-label", "\u6298\u53E0\u6807\u9898");
+    (0, import_obsidian.setIcon)(arrow, "chevron-down");
+    arrow.addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const collapsed = element.getAttribute(MOBILE_COLLAPSED_ATTRIBUTE) === "true";
+      element.setAttribute(MOBILE_COLLAPSED_ATTRIBUTE, String(!collapsed));
+      arrow == null ? void 0 : arrow.setAttribute(
+        "aria-label",
+        collapsed ? "\u6298\u53E0\u6807\u9898" : "\u5C55\u5F00\u6807\u9898"
+      );
+      this.applyMobileCollapsedSections(this.getReadingBlocks(container));
+    });
+    element.prepend(arrow);
+  }
+  applyMobileCollapsedSections(blocks) {
+    if (!import_obsidian.Platform.isMobile) {
+      return;
+    }
+    if (!this.settings.enableIndentation || !this.settings.showFoldArrows) {
+      blocks.forEach((element) => {
+        element.classList.remove("sts-mobile-section-hidden");
+      });
+      return;
+    }
+    const collapsedLevels = [];
+    blocks.forEach((element) => {
+      const levelValue = element.getAttribute(MOBILE_HEADING_ATTRIBUTE);
+      const level = levelValue === null ? null : Number.parseInt(levelValue, 10);
+      if (level !== null) {
+        while (collapsedLevels.length > 0 && collapsedLevels[collapsedLevels.length - 1] >= level) {
+          collapsedLevels.pop();
+        }
+      }
+      element.classList.toggle(
+        "sts-mobile-section-hidden",
+        collapsedLevels.length > 0
+      );
+      if (level !== null && element.getAttribute(MOBILE_COLLAPSED_ATTRIBUTE) === "true") {
+        collapsedLevels.push(level);
       }
     });
   }
@@ -370,8 +450,11 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   clearOutlineAttributes(element) {
     element.removeAttribute(DEPTH_ATTRIBUTE);
     element.removeAttribute(WIDGET_ATTRIBUTE);
+    element.removeAttribute(MOBILE_HEADING_ATTRIBUTE);
+    element.removeAttribute(MOBILE_COLLAPSED_ATTRIBUTE);
     element.style.removeProperty(DEPTH_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
+    element.style.removeProperty(EXTEND_BEFORE_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       element.style.removeProperty(`--sts-heading-guide-${index}`);
     }
