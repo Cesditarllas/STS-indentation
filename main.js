@@ -342,7 +342,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   bridgeReadingBlockGap(blocks, index) {
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
-    if (!import_obsidian.Platform.isMobile || index === 0) {
+    if (index === 0) {
       return;
     }
     const previous = blocks[index - 1];

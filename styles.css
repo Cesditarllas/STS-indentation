@@ -2,6 +2,7 @@
   --sts-outline-indent: var(--font-text-size, 16px);
   --sts-outline-line-width: 1px;
   --sts-outline-line-color: var(--indentation-guide-color, #253545);
+  --sts-outline-guide-z-index: 5;
 }
 
 body.sts-indentation-enabled
@@ -31,7 +32,7 @@ body.sts-indentation-enabled
   content: "";
   display: none;
   position: absolute;
-  z-index: 0;
+  z-index: var(--sts-outline-guide-z-index, 5);
   inset-block-start: calc(-1 * var(--sts-outline-extend-before, 0px));
   inset-block-end: calc(-1 * var(--sts-outline-extend-after, 0px));
   width: calc(

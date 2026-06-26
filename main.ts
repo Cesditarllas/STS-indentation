@@ -420,7 +420,7 @@ export default class StsIndentationPlugin extends Plugin {
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
 
-    if (!Platform.isMobile || index === 0) {
+    if (index === 0) {
       return;
     }
 
