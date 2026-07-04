@@ -472,8 +472,8 @@ export default class StsIndentationPlugin extends Plugin {
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
 
-    if (index > 0) {
-      const previous = blocks[index - 1];
+    const previous = this.previousReadingGuideBlock(blocks, index);
+    if (previous !== null) {
       const gapBefore = Math.max(
         0,
         element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
@@ -483,6 +483,20 @@ export default class StsIndentationPlugin extends Plugin {
       }
     }
 
+  }
+
+  private previousReadingGuideBlock(
+    blocks: HTMLElement[],
+    index: number
+  ): HTMLElement | null {
+    for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+      const previous = blocks[previousIndex];
+      if (!previous.matches("hr")) {
+        return previous;
+      }
+    }
+
+    return null;
   }
 
   private updateMobileFoldArrow(

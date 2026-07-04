@@ -82,6 +82,12 @@ body.sts-indentation-enabled
 }
 
 body.sts-indentation-guides-enabled
+  .markdown-preview-view
+  hr[data-sts-outline-depth]::before {
+  display: none;
+}
+
+body.sts-indentation-guides-enabled
   .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before,
 body.sts-indentation-guides-enabled

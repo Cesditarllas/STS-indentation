@@ -364,8 +364,8 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
-    if (index > 0) {
-      const previous = blocks[index - 1];
+    const previous = this.previousReadingGuideBlock(blocks, index);
+    if (previous !== null) {
       const gapBefore = Math.max(
         0,
         element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
@@ -374,6 +374,15 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
         element.style.setProperty(EXTEND_BEFORE_STYLE, `${gapBefore}px`);
       }
     }
+  }
+  previousReadingGuideBlock(blocks, index) {
+    for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
+      const previous = blocks[previousIndex];
+      if (!previous.matches("hr")) {
+        return previous;
+      }
+    }
+    return null;
   }
   updateMobileFoldArrow(container, element, level) {
     if (!import_obsidian.Platform.isMobile || level === null) {
