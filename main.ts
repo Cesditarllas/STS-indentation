@@ -15,6 +15,7 @@ const MOBILE_HEADING_ATTRIBUTE = "data-sts-mobile-heading-level";
 const MOBILE_COLLAPSED_ATTRIBUTE = "data-sts-mobile-collapsed";
 const EXTEND_STYLE = "--sts-outline-extend-after";
 const EXTEND_BEFORE_STYLE = "--sts-outline-extend-before";
+const X_OFFSET_STYLE = "--sts-outline-x-offset";
 const LINE_WIDTH_STYLE = "--sts-outline-line-width";
 const ENABLED_CLASS = "sts-indentation-enabled";
 const GUIDE_CLASS = "sts-indentation-guides-enabled";
@@ -436,6 +437,7 @@ export default class StsIndentationPlugin extends Plugin {
     container: HTMLElement | null = null
   ): void {
     const ancestors: HeadingAncestor[] = [];
+    const baseLeft = this.readingGuideBaseLeft(blocks, container);
     blocks.forEach((element, index) => {
       const level = this.readingHeadingLevel(element);
 
@@ -453,6 +455,7 @@ export default class StsIndentationPlugin extends Plugin {
         this.setOutlineAttributes(element, ancestors);
       }
 
+      this.setReadingGuideOffset(element, baseLeft);
       this.bridgeReadingBlockGap(blocks, index);
       if (container !== null) {
         this.updateMobileFoldArrow(container, element, level);
@@ -497,6 +500,35 @@ export default class StsIndentationPlugin extends Plugin {
     }
 
     return null;
+  }
+
+  private readingGuideBaseLeft(
+    blocks: HTMLElement[],
+    container: HTMLElement | null
+  ): number | null {
+    if (container !== null) {
+      return container.getBoundingClientRect().left;
+    }
+
+    const firstConnectedBlock = blocks.find(block => block.isConnected);
+    const baseElement =
+      firstConnectedBlock?.closest<HTMLElement>(".markdown-preview-sizer") ??
+      firstConnectedBlock?.parentElement;
+
+    return baseElement?.getBoundingClientRect().left ?? null;
+  }
+
+  private setReadingGuideOffset(
+    element: HTMLElement,
+    baseLeft: number | null
+  ): void {
+    if (baseLeft === null || !element.isConnected) {
+      element.style.removeProperty(X_OFFSET_STYLE);
+      return;
+    }
+
+    const offset = element.getBoundingClientRect().left - baseLeft;
+    element.style.setProperty(X_OFFSET_STYLE, `${offset}px`);
   }
 
   private updateMobileFoldArrow(
@@ -663,6 +695,7 @@ export default class StsIndentationPlugin extends Plugin {
     element.style.removeProperty(DEPTH_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
+    element.style.removeProperty(X_OFFSET_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       element.style.removeProperty(`--sts-heading-guide-${index}`);
     }

@@ -73,7 +73,10 @@ body.sts-indentation-enabled
 
 body.sts-indentation-enabled
   .markdown-preview-view [data-sts-outline-depth]::before {
-  inset-inline-start: calc(-1 * var(--sts-outline-indent, 16px));
+  inset-inline-start: calc(
+    -1 * var(--sts-outline-indent, 16px) -
+      var(--sts-outline-x-offset, 0px)
+  );
 }
 
 body.sts-indentation-enabled

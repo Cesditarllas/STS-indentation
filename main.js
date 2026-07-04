@@ -32,6 +32,7 @@ var MOBILE_HEADING_ATTRIBUTE = "data-sts-mobile-heading-level";
 var MOBILE_COLLAPSED_ATTRIBUTE = "data-sts-mobile-collapsed";
 var EXTEND_STYLE = "--sts-outline-extend-after";
 var EXTEND_BEFORE_STYLE = "--sts-outline-extend-before";
+var X_OFFSET_STYLE = "--sts-outline-x-offset";
 var LINE_WIDTH_STYLE = "--sts-outline-line-width";
 var ENABLED_CLASS = "sts-indentation-enabled";
 var GUIDE_CLASS = "sts-indentation-guides-enabled";
@@ -340,6 +341,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   }
   updateReadingBlocks(blocks, container = null) {
     const ancestors = [];
+    const baseLeft = this.readingGuideBaseLeft(blocks, container);
     blocks.forEach((element, index) => {
       const level = this.readingHeadingLevel(element);
       if (level !== null) {
@@ -351,6 +353,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       } else {
         this.setOutlineAttributes(element, ancestors);
       }
+      this.setReadingGuideOffset(element, baseLeft);
       this.bridgeReadingBlockGap(blocks, index);
       if (container !== null) {
         this.updateMobileFoldArrow(container, element, level);
@@ -383,6 +386,23 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       }
     }
     return null;
+  }
+  readingGuideBaseLeft(blocks, container) {
+    var _a, _b;
+    if (container !== null) {
+      return container.getBoundingClientRect().left;
+    }
+    const firstConnectedBlock = blocks.find((block) => block.isConnected);
+    const baseElement = (_a = firstConnectedBlock == null ? void 0 : firstConnectedBlock.closest(".markdown-preview-sizer")) != null ? _a : firstConnectedBlock == null ? void 0 : firstConnectedBlock.parentElement;
+    return (_b = baseElement == null ? void 0 : baseElement.getBoundingClientRect().left) != null ? _b : null;
+  }
+  setReadingGuideOffset(element, baseLeft) {
+    if (baseLeft === null || !element.isConnected) {
+      element.style.removeProperty(X_OFFSET_STYLE);
+      return;
+    }
+    const offset = element.getBoundingClientRect().left - baseLeft;
+    element.style.setProperty(X_OFFSET_STYLE, `${offset}px`);
   }
   updateMobileFoldArrow(container, element, level) {
     if (!import_obsidian.Platform.isMobile || level === null) {
@@ -505,6 +525,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     element.style.removeProperty(DEPTH_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
+    element.style.removeProperty(X_OFFSET_STYLE);
     for (let index = 1; index <= MAX_GUIDES; index += 1) {
       element.style.removeProperty(`--sts-heading-guide-${index}`);
     }
