@@ -81,12 +81,6 @@ body.sts-indentation-enabled
   overflow: visible;
 }
 
-body.sts-indentation-enabled
-  .markdown-preview-view hr[data-sts-outline-depth]::before {
-  inset-block-start: calc(-1 * max(var(--sts-outline-extend-before, 1em), 1em));
-  inset-block-end: calc(-1 * max(var(--sts-outline-extend-after, 1em), 1em));
-}
-
 body.sts-indentation-guides-enabled
   .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before,

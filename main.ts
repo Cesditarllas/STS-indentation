@@ -483,21 +483,6 @@ export default class StsIndentationPlugin extends Plugin {
       }
     }
 
-    let nextIndex = index + 1;
-    while (blocks[nextIndex]?.matches("hr")) {
-      nextIndex += 1;
-    }
-
-    const next = blocks[nextIndex] ?? blocks[index + 1];
-    if (next !== undefined) {
-      const gapAfter = Math.max(
-        0,
-        next.getBoundingClientRect().top - element.getBoundingClientRect().bottom
-      );
-      if (gapAfter > 0) {
-        element.style.setProperty(EXTEND_STYLE, `${gapAfter}px`);
-      }
-    }
   }
 
   private updateMobileFoldArrow(

@@ -361,7 +361,6 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     }
   }
   bridgeReadingBlockGap(blocks, index) {
-    var _a, _b;
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
     element.style.removeProperty(EXTEND_STYLE);
@@ -373,20 +372,6 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       );
       if (gapBefore > 0) {
         element.style.setProperty(EXTEND_BEFORE_STYLE, `${gapBefore}px`);
-      }
-    }
-    let nextIndex = index + 1;
-    while ((_a = blocks[nextIndex]) == null ? void 0 : _a.matches("hr")) {
-      nextIndex += 1;
-    }
-    const next = (_b = blocks[nextIndex]) != null ? _b : blocks[index + 1];
-    if (next !== void 0) {
-      const gapAfter = Math.max(
-        0,
-        next.getBoundingClientRect().top - element.getBoundingClientRect().bottom
-      );
-      if (gapAfter > 0) {
-        element.style.setProperty(EXTEND_STYLE, `${gapAfter}px`);
       }
     }
   }
