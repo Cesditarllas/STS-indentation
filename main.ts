@@ -72,6 +72,33 @@ interface HeadingAncestor {
   level: number;
 }
 
+interface RenderedSectionLike {
+  el?: unknown;
+}
+
+interface MarkdownViewLike {
+  modes?: {
+    preview?: {
+      renderer?: {
+        sections?: RenderedSectionLike[];
+      };
+    };
+  };
+}
+
+function isHtmlElement(value: unknown): value is HTMLElement {
+  const maybeElement = value as { instanceOf?: unknown } | null;
+
+  return value instanceof HTMLElement ||
+    (
+      typeof value === "object" &&
+      value !== null &&
+      "instanceOf" in value &&
+      typeof maybeElement?.instanceOf === "function" &&
+      maybeElement.instanceOf(HTMLElement)
+    );
+}
+
 function headingLevel(text: string): number | null {
   const match = text.match(/^\s{0,3}(#{1,6})(?:\s+|$)/);
   return match ? match[1].length : null;
@@ -380,15 +407,35 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private updateReadingViews(): void {
+    this.updateReadingRendererSections();
+
     activeDocument
       .querySelectorAll<HTMLElement>(".markdown-preview-view .markdown-preview-sizer")
       .forEach(container => this.updateReadingContainer(container));
   }
 
-  private updateReadingContainer(container: HTMLElement): void {
-    const ancestors: HeadingAncestor[] = [];
-    const blocks = this.getReadingBlocks(container);
+  private updateReadingRendererSections(): void {
+    this.app.workspace.getLeavesOfType("markdown").forEach(leaf => {
+      const renderer = (leaf.view as MarkdownViewLike).modes?.preview?.renderer;
+      const sectionElements = renderer?.sections
+        ?.map(section => section.el)
+        .filter(isHtmlElement) ?? [];
 
+      if (sectionElements.length > 0) {
+        this.updateReadingBlocks(this.getReadingBlocksFromSections(sectionElements));
+      }
+    });
+  }
+
+  private updateReadingContainer(container: HTMLElement): void {
+    this.updateReadingBlocks(this.getReadingBlocks(container), container);
+  }
+
+  private updateReadingBlocks(
+    blocks: HTMLElement[],
+    container: HTMLElement | null = null
+  ): void {
+    const ancestors: HeadingAncestor[] = [];
     blocks.forEach((element, index) => {
       const level = this.readingHeadingLevel(element);
 
@@ -407,10 +454,14 @@ export default class StsIndentationPlugin extends Plugin {
       }
 
       this.bridgeReadingBlockGap(blocks, index);
-      this.updateMobileFoldArrow(container, element, level);
+      if (container !== null) {
+        this.updateMobileFoldArrow(container, element, level);
+      }
     });
 
-    this.applyMobileCollapsedSections(blocks);
+    if (container !== null) {
+      this.applyMobileCollapsedSections(blocks);
+    }
   }
 
   private bridgeReadingBlockGap(
@@ -419,17 +470,34 @@ export default class StsIndentationPlugin extends Plugin {
   ): void {
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
+    element.style.removeProperty(EXTEND_STYLE);
 
-    if (index === 0) {
-      return;
+    if (index > 0) {
+      const previous = blocks[index - 1];
+      const gapBefore = Math.max(
+        0,
+        element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
+      );
+      if (gapBefore > 0) {
+        element.style.setProperty(EXTEND_BEFORE_STYLE, `${gapBefore}px`);
+      }
     }
 
-    const previous = blocks[index - 1];
-    const gap = Math.max(
-      0,
-      element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
-    );
-    element.style.setProperty(EXTEND_BEFORE_STYLE, `${gap}px`);
+    let nextIndex = index + 1;
+    while (blocks[nextIndex]?.matches("hr")) {
+      nextIndex += 1;
+    }
+
+    const next = blocks[nextIndex] ?? blocks[index + 1];
+    if (next !== undefined) {
+      const gapAfter = Math.max(
+        0,
+        next.getBoundingClientRect().top - element.getBoundingClientRect().bottom
+      );
+      if (gapAfter > 0) {
+        element.style.setProperty(EXTEND_STYLE, `${gapAfter}px`);
+      }
+    }
   }
 
   private updateMobileFoldArrow(
@@ -516,34 +584,52 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private getReadingBlocks(container: HTMLElement): HTMLElement[] {
+    const sections = Array.from(
+      container.querySelectorAll<HTMLElement>(".markdown-preview-section")
+    );
+
+    if (sections.length > 0) {
+      return this.getReadingBlocksFromSections(sections);
+    }
+
+    return Array.from(container.children).filter(
+      (child): child is HTMLElement => this.isReadingBlock(child)
+    );
+  }
+
+  private getReadingBlocksFromSections(sections: HTMLElement[]): HTMLElement[] {
     const blocks: HTMLElement[] = [];
 
-    container
-      .querySelectorAll<HTMLElement>(".markdown-preview-section")
-      .forEach(section => {
-        if (section.closest(".markdown-embed") !== null) {
-          return;
-        }
+    sections.forEach(section => {
+      if (section.closest(".markdown-embed") !== null) {
+        return;
+      }
 
-        Array.from(section.children).forEach(child => {
-          if (
-            child.instanceOf(HTMLElement) &&
-            !child.classList.contains("mod-header")
-          ) {
+      const roots = section.classList.contains("markdown-preview-section")
+        ? [section]
+        : Array.from(section.querySelectorAll<HTMLElement>(".markdown-preview-section"));
+
+      if (roots.length === 0) {
+        if (this.isReadingBlock(section)) {
+          blocks.push(section);
+        }
+        return;
+      }
+
+      roots.forEach(root => {
+        Array.from(root.children).forEach(child => {
+          if (this.isReadingBlock(child)) {
             blocks.push(child);
           }
         });
       });
+    });
 
-    if (blocks.length > 0) {
-      return blocks;
-    }
+    return blocks;
+  }
 
-    return Array.from(container.children).filter(
-      (child): child is HTMLElement =>
-        child.instanceOf(HTMLElement) &&
-        !child.classList.contains("mod-header")
-    );
+  private isReadingBlock(element: Element): element is HTMLElement {
+    return isHtmlElement(element) && !element.classList.contains("mod-header");
   }
 
   private readingHeadingLevel(element: HTMLElement): number | null {

@@ -58,6 +58,10 @@ function loadSettings(data) {
     guideLineWidth: typeof saved.guideLineWidth === "number" ? Math.min(2, Math.max(0.1, saved.guideLineWidth)) : DEFAULT_SETTINGS.guideLineWidth
   };
 }
+function isHtmlElement(value) {
+  const maybeElement = value;
+  return value instanceof HTMLElement || typeof value === "object" && value !== null && "instanceOf" in value && typeof (maybeElement == null ? void 0 : maybeElement.instanceOf) === "function" && maybeElement.instanceOf(HTMLElement);
+}
 function headingLevel(text) {
   const match = text.match(/^\s{0,3}(#{1,6})(?:\s+|$)/);
   return match ? match[1].length : null;
@@ -318,11 +322,24 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     }
   }
   updateReadingViews() {
+    this.updateReadingRendererSections();
     activeDocument.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container));
   }
+  updateReadingRendererSections() {
+    this.app.workspace.getLeavesOfType("markdown").forEach((leaf) => {
+      var _a, _b, _c, _d;
+      const renderer = (_b = (_a = leaf.view.modes) == null ? void 0 : _a.preview) == null ? void 0 : _b.renderer;
+      const sectionElements = (_d = (_c = renderer == null ? void 0 : renderer.sections) == null ? void 0 : _c.map((section) => section.el).filter(isHtmlElement)) != null ? _d : [];
+      if (sectionElements.length > 0) {
+        this.updateReadingBlocks(this.getReadingBlocksFromSections(sectionElements));
+      }
+    });
+  }
   updateReadingContainer(container) {
+    this.updateReadingBlocks(this.getReadingBlocks(container), container);
+  }
+  updateReadingBlocks(blocks, container = null) {
     const ancestors = [];
-    const blocks = this.getReadingBlocks(container);
     blocks.forEach((element, index) => {
       const level = this.readingHeadingLevel(element);
       if (level !== null) {
@@ -335,22 +352,43 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
         this.setOutlineAttributes(element, ancestors);
       }
       this.bridgeReadingBlockGap(blocks, index);
-      this.updateMobileFoldArrow(container, element, level);
+      if (container !== null) {
+        this.updateMobileFoldArrow(container, element, level);
+      }
     });
-    this.applyMobileCollapsedSections(blocks);
+    if (container !== null) {
+      this.applyMobileCollapsedSections(blocks);
+    }
   }
   bridgeReadingBlockGap(blocks, index) {
+    var _a, _b;
     const element = blocks[index];
     element.style.removeProperty(EXTEND_BEFORE_STYLE);
-    if (index === 0) {
-      return;
+    element.style.removeProperty(EXTEND_STYLE);
+    if (index > 0) {
+      const previous = blocks[index - 1];
+      const gapBefore = Math.max(
+        0,
+        element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
+      );
+      if (gapBefore > 0) {
+        element.style.setProperty(EXTEND_BEFORE_STYLE, `${gapBefore}px`);
+      }
     }
-    const previous = blocks[index - 1];
-    const gap = Math.max(
-      0,
-      element.getBoundingClientRect().top - previous.getBoundingClientRect().bottom
-    );
-    element.style.setProperty(EXTEND_BEFORE_STYLE, `${gap}px`);
+    let nextIndex = index + 1;
+    while ((_a = blocks[nextIndex]) == null ? void 0 : _a.matches("hr")) {
+      nextIndex += 1;
+    }
+    const next = (_b = blocks[nextIndex]) != null ? _b : blocks[index + 1];
+    if (next !== void 0) {
+      const gapAfter = Math.max(
+        0,
+        next.getBoundingClientRect().top - element.getBoundingClientRect().bottom
+      );
+      if (gapAfter > 0) {
+        element.style.setProperty(EXTEND_STYLE, `${gapAfter}px`);
+      }
+    }
   }
   updateMobileFoldArrow(container, element, level) {
     if (!import_obsidian.Platform.isMobile || level === null) {
@@ -413,23 +451,41 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     });
   }
   getReadingBlocks(container) {
+    const sections = Array.from(
+      container.querySelectorAll(".markdown-preview-section")
+    );
+    if (sections.length > 0) {
+      return this.getReadingBlocksFromSections(sections);
+    }
+    return Array.from(container.children).filter(
+      (child) => this.isReadingBlock(child)
+    );
+  }
+  getReadingBlocksFromSections(sections) {
     const blocks = [];
-    container.querySelectorAll(".markdown-preview-section").forEach((section) => {
+    sections.forEach((section) => {
       if (section.closest(".markdown-embed") !== null) {
         return;
       }
-      Array.from(section.children).forEach((child) => {
-        if (child.instanceOf(HTMLElement) && !child.classList.contains("mod-header")) {
-          blocks.push(child);
+      const roots = section.classList.contains("markdown-preview-section") ? [section] : Array.from(section.querySelectorAll(".markdown-preview-section"));
+      if (roots.length === 0) {
+        if (this.isReadingBlock(section)) {
+          blocks.push(section);
         }
+        return;
+      }
+      roots.forEach((root) => {
+        Array.from(root.children).forEach((child) => {
+          if (this.isReadingBlock(child)) {
+            blocks.push(child);
+          }
+        });
       });
     });
-    if (blocks.length > 0) {
-      return blocks;
-    }
-    return Array.from(container.children).filter(
-      (child) => child.instanceOf(HTMLElement) && !child.classList.contains("mod-header")
-    );
+    return blocks;
+  }
+  isReadingBlock(element) {
+    return isHtmlElement(element) && !element.classList.contains("mod-header");
   }
   readingHeadingLevel(element) {
     const heading = element.matches("h1,h2,h3,h4,h5,h6") ? element : element.querySelector(":scope > h1, :scope > h2, :scope > h3, :scope > h4, :scope > h5, :scope > h6");
