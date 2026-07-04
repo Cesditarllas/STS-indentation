@@ -25,6 +25,12 @@ body.sts-indentation-enabled
 }
 
 body.sts-indentation-enabled
+  .markdown-preview-view
+  .markdown-preview-section {
+  overflow: visible;
+}
+
+body.sts-indentation-enabled
   .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before,
 body.sts-indentation-enabled
