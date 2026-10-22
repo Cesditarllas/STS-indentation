@@ -506,16 +506,13 @@ export default class StsIndentationPlugin extends Plugin {
     blocks: HTMLElement[],
     container: HTMLElement | null
   ): number | null {
-    if (container !== null) {
-      return container.getBoundingClientRect().left;
+    const firstConnectedBlock = blocks.find(block => block.isConnected);
+    // Use the content edge; themes may pad the preview sizer itself.
+    if (firstConnectedBlock !== undefined) {
+      return firstConnectedBlock.getBoundingClientRect().left;
     }
 
-    const firstConnectedBlock = blocks.find(block => block.isConnected);
-    const baseElement =
-      firstConnectedBlock?.closest<HTMLElement>(".markdown-preview-sizer") ??
-      firstConnectedBlock?.parentElement;
-
-    return baseElement?.getBoundingClientRect().left ?? null;
+    return container?.getBoundingClientRect().left ?? null;
   }
 
   private setReadingGuideOffset(

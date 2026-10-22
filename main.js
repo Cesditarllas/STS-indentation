@@ -388,13 +388,12 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     return null;
   }
   readingGuideBaseLeft(blocks, container) {
-    var _a, _b;
-    if (container !== null) {
-      return container.getBoundingClientRect().left;
-    }
+    var _a;
     const firstConnectedBlock = blocks.find((block) => block.isConnected);
-    const baseElement = (_a = firstConnectedBlock == null ? void 0 : firstConnectedBlock.closest(".markdown-preview-sizer")) != null ? _a : firstConnectedBlock == null ? void 0 : firstConnectedBlock.parentElement;
-    return (_b = baseElement == null ? void 0 : baseElement.getBoundingClientRect().left) != null ? _b : null;
+    if (firstConnectedBlock !== void 0) {
+      return firstConnectedBlock.getBoundingClientRect().left;
+    }
+    return (_a = container == null ? void 0 : container.getBoundingClientRect().left) != null ? _a : null;
   }
   setReadingGuideOffset(element, baseLeft) {
     if (baseLeft === null || !element.isConnected) {

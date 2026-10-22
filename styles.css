@@ -30,6 +30,26 @@ body.sts-indentation-enabled
   overflow: visible;
 }
 
+/* Keep list-marker space in addition to the heading indentation. */
+body.sts-indentation-enabled
+  .markdown-preview-view :is(ul, ol)[data-sts-outline-depth] {
+  padding-inline-start: calc(
+    var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px) +
+      var(--list-indent, 2em)
+  );
+}
+
+body.sts-indentation-enabled
+  .markdown-preview-view [data-sts-outline-depth] li {
+  padding-inline-start: 0.5em;
+}
+
+body.sts-indentation-enabled
+  .markdown-source-view.mod-cm6.is-live-preview
+  .HyperMD-list-line[data-sts-outline-depth] .cm-formatting-list-ul {
+  padding-inline-end: 0.5em;
+}
+
 body.sts-indentation-enabled
   .markdown-source-view.mod-cm6
   :is(.cm-line, .cm-embed-block, .image-embed)[data-sts-outline-depth]::before,
@@ -44,6 +64,16 @@ body.sts-indentation-enabled
   width: calc(
     var(--sts-outline-depth, 0) * var(--sts-outline-indent, 16px)
   );
+  /* Themes can give heading pseudo-elements a fixed height or transform. */
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  transform: none;
+  float: none;
+  background-color: transparent;
   pointer-events: none;
   background-image:
     linear-gradient(var(--sts-render-guide-1, transparent), var(--sts-render-guide-1, transparent)),
@@ -86,7 +116,7 @@ body.sts-indentation-enabled
 
 body.sts-indentation-guides-enabled
   .markdown-preview-view
-  hr[data-sts-outline-depth]::before {
+  hr[data-sts-outline-depth][data-sts-outline-depth]::before {
   display: none;
 }
 
