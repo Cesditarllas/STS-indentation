@@ -16,6 +16,7 @@ const MOBILE_COLLAPSED_ATTRIBUTE = "data-sts-mobile-collapsed";
 const EXTEND_STYLE = "--sts-outline-extend-after";
 const EXTEND_BEFORE_STYLE = "--sts-outline-extend-before";
 const X_OFFSET_STYLE = "--sts-outline-x-offset";
+const SEPARATOR_ATTRIBUTE = "data-sts-outline-separator";
 const LINE_WIDTH_STYLE = "--sts-outline-line-width";
 const ENABLED_CLASS = "sts-indentation-enabled";
 const GUIDE_CLASS = "sts-indentation-guides-enabled";
@@ -204,12 +205,35 @@ export default class StsIndentationPlugin extends Plugin {
   private readingFrame: number | null = null;
   private editorObserver: MutationObserver | null = null;
   private editorFrame: number | null = null;
+  private documents = new Set<Document>();
+
+  private getDocuments(): Document[] {
+    this.documents.add(document);
+    this.documents.add(activeDocument);
+    this.app.workspace.iterateAllLeaves(leaf => {
+      this.documents.add(leaf.view.containerEl.ownerDocument);
+    });
+    return [...this.documents].filter(doc => !doc.defaultView?.closed);
+  }
+
+  private observeDocuments(): void {
+    this.getDocuments().forEach(doc => {
+      this.readingObserver?.observe(doc.body, { childList: true, subtree: true });
+      this.editorObserver?.observe(doc.body, { childList: true, subtree: true });
+    });
+  }
 
   async onload(): Promise<void> {
     this.settings = loadSettings(await this.loadData() as unknown);
     this.applySettingClasses();
     this.addSettingTab(new StsIndentationSettingTab(this.app, this));
     this.registerEditorExtension(headingOutlineEditorExtension);
+    this.registerEvent(this.app.workspace.on("window-open", (_win, win) => {
+      this.documents.add(win.document);
+      this.applySettingClasses();
+      this.scheduleReadingViewUpdate();
+      this.scheduleEditorWidgetUpdate();
+    }));
 
     this.registerMarkdownPostProcessor(() => {
       this.scheduleReadingViewUpdate();
@@ -252,6 +276,7 @@ export default class StsIndentationPlugin extends Plugin {
       subtree: true
     });
     this.register(() => this.editorObserver?.disconnect());
+    this.observeDocuments();
 
     this.scheduleReadingViewUpdate();
     this.scheduleEditorWidgetUpdate();
@@ -265,46 +290,53 @@ export default class StsIndentationPlugin extends Plugin {
       window.cancelAnimationFrame(this.editorFrame);
     }
 
-    activeDocument.body.classList.remove(
-      ENABLED_CLASS,
-      GUIDE_CLASS,
-      COLORED_GUIDE_CLASS,
-      FOLD_ARROW_CLASS
-    );
-    activeDocument.body.style.removeProperty(LINE_WIDTH_STYLE);
-    activeDocument.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
-      this.clearOutlineAttributes(element);
+    this.getDocuments().forEach(doc => {
+      doc.body.classList.remove(
+        ENABLED_CLASS,
+        GUIDE_CLASS,
+        COLORED_GUIDE_CLASS,
+        FOLD_ARROW_CLASS
+      );
+      doc.body.style.removeProperty(LINE_WIDTH_STYLE);
+      doc.querySelectorAll<HTMLElement>(`[${DEPTH_ATTRIBUTE}]`).forEach(element => {
+        this.clearOutlineAttributes(element);
+      });
     });
+    this.documents.clear();
   }
 
   async updateSettings(settings: Partial<StsIndentationSettings>): Promise<void> {
     this.settings = Object.assign({}, this.settings, settings);
-    await this.saveData(this.settings);
     this.applySettingClasses();
     this.scheduleReadingViewUpdate();
+    this.scheduleEditorWidgetUpdate();
+    await this.saveData(this.settings);
   }
 
   private applySettingClasses(): void {
-    activeDocument.body.classList.toggle(
-      ENABLED_CLASS,
-      this.settings.enableIndentation
-    );
-    activeDocument.body.classList.toggle(
-      GUIDE_CLASS,
-      this.settings.enableIndentation && this.settings.showGuides
-    );
-    activeDocument.body.classList.toggle(
-      COLORED_GUIDE_CLASS,
-      this.settings.colorGuidesByHeading
-    );
-    activeDocument.body.classList.toggle(
-      FOLD_ARROW_CLASS,
-      this.settings.enableIndentation && this.settings.showFoldArrows
-    );
-    activeDocument.body.style.setProperty(
-      LINE_WIDTH_STYLE,
-      `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
-    );
+    this.observeDocuments();
+    this.getDocuments().forEach(doc => {
+      doc.body.classList.toggle(
+        ENABLED_CLASS,
+        this.settings.enableIndentation
+      );
+      doc.body.classList.toggle(
+        GUIDE_CLASS,
+        this.settings.enableIndentation && this.settings.showGuides
+      );
+      doc.body.classList.toggle(
+        COLORED_GUIDE_CLASS,
+        this.settings.colorGuidesByHeading
+      );
+      doc.body.classList.toggle(
+        FOLD_ARROW_CLASS,
+        this.settings.enableIndentation && this.settings.showFoldArrows
+      );
+      doc.body.style.setProperty(
+        LINE_WIDTH_STYLE,
+        `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
+      );
+    });
   }
 
   private scheduleReadingViewUpdate(): void {
@@ -330,42 +362,44 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private updateEditorWidgets(): void {
-    activeDocument
-      .querySelectorAll<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`)
-      .forEach(line => line.style.removeProperty(EXTEND_STYLE));
+    this.getDocuments().forEach(doc => {
+      doc
+        .querySelectorAll<HTMLElement>(`.cm-line[${DEPTH_ATTRIBUTE}]`)
+        .forEach(line => line.style.removeProperty(EXTEND_STYLE));
 
-    activeDocument
-      .querySelectorAll<HTMLElement>(".markdown-source-view.mod-cm6 .cm-content")
-      .forEach(container => {
-        container
-          .querySelectorAll<HTMLElement>(
-            ".cm-embed-block, .image-embed, .internal-embed.image-embed"
-          )
-          .forEach(widget => {
-            const block = widget.closest<HTMLElement>(".cm-embed-block") ?? widget;
-            if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
-              return;
-            }
+      doc
+        .querySelectorAll<HTMLElement>(".markdown-source-view.mod-cm6 .cm-content")
+        .forEach(container => {
+          container
+            .querySelectorAll<HTMLElement>(
+              ".cm-embed-block, .image-embed, .internal-embed.image-embed"
+            )
+            .forEach(widget => {
+              const block = widget.closest<HTMLElement>(".cm-embed-block") ?? widget;
+              if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+                return;
+              }
 
-            const line = this.findWidgetSourceLine(block);
-            if (line === null) {
-              return;
-            }
+              const line = this.findWidgetSourceLine(block);
+              if (line === null) {
+                return;
+              }
 
-            this.copyOutlineAttributes(line, block);
-            block.setAttribute(WIDGET_ATTRIBUTE, "true");
+              this.copyOutlineAttributes(line, block);
+              block.setAttribute(WIDGET_ATTRIBUTE, "true");
 
-            const lineRect = line.getBoundingClientRect();
-            const blockRect = block.getBoundingClientRect();
-            const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
-            const currentExtension =
-              Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
-            line.style.setProperty(
-              EXTEND_STYLE,
-              `${Math.max(currentExtension, extension)}px`
-            );
-          });
-      });
+              const lineRect = line.getBoundingClientRect();
+              const blockRect = block.getBoundingClientRect();
+              const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
+              const currentExtension =
+                Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
+              line.style.setProperty(
+                EXTEND_STYLE,
+                `${Math.max(currentExtension, extension)}px`
+              );
+            });
+        });
+    });
   }
 
   private findWidgetSourceLine(widget: HTMLElement): HTMLElement | null {
@@ -408,11 +442,12 @@ export default class StsIndentationPlugin extends Plugin {
   }
 
   private updateReadingViews(): void {
+    this.applySettingClasses();
     this.updateReadingRendererSections();
 
-    activeDocument
+    this.getDocuments().forEach(doc => doc
       .querySelectorAll<HTMLElement>(".markdown-preview-view .markdown-preview-sizer")
-      .forEach(container => this.updateReadingContainer(container));
+      .forEach(container => this.updateReadingContainer(container)));
   }
 
   private updateReadingRendererSections(): void {
@@ -456,6 +491,7 @@ export default class StsIndentationPlugin extends Plugin {
       }
 
       this.setReadingGuideOffset(element, baseLeft);
+      element.toggleAttribute(SEPARATOR_ATTRIBUTE, this.isReadingSeparator(element));
       this.bridgeReadingBlockGap(blocks, index);
       if (container !== null) {
         this.updateMobileFoldArrow(container, element, level);
@@ -494,12 +530,16 @@ export default class StsIndentationPlugin extends Plugin {
   ): HTMLElement | null {
     for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
       const previous = blocks[previousIndex];
-      if (!previous.matches("hr")) {
+      if (!this.isReadingSeparator(previous)) {
         return previous;
       }
     }
 
     return null;
+  }
+
+  private isReadingSeparator(element: HTMLElement): boolean {
+    return element.matches("hr, .el-hr") || element.querySelector(":scope > hr") !== null;
   }
 
   private readingGuideBaseLeft(
@@ -687,6 +727,7 @@ export default class StsIndentationPlugin extends Plugin {
   private clearOutlineAttributes(element: HTMLElement): void {
     element.removeAttribute(DEPTH_ATTRIBUTE);
     element.removeAttribute(WIDGET_ATTRIBUTE);
+    element.removeAttribute(SEPARATOR_ATTRIBUTE);
     element.removeAttribute(MOBILE_HEADING_ATTRIBUTE);
     element.removeAttribute(MOBILE_COLLAPSED_ATTRIBUTE);
     element.style.removeProperty(DEPTH_STYLE);
@@ -732,7 +773,7 @@ class StsIndentationSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName("显示折叠箭头")
-      .setDesc("在层级线上始终显示折叠箭头，并替代 Obsidian 默认的悬停箭头。")
+      .setDesc("在标题左侧始终显示折叠箭头，与层级线留出间距。")
       .addToggle(toggle => {
         toggle
           .setValue(this.plugin.settings.showFoldArrows)

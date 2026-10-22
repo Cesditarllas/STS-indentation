@@ -33,6 +33,7 @@ var MOBILE_COLLAPSED_ATTRIBUTE = "data-sts-mobile-collapsed";
 var EXTEND_STYLE = "--sts-outline-extend-after";
 var EXTEND_BEFORE_STYLE = "--sts-outline-extend-before";
 var X_OFFSET_STYLE = "--sts-outline-x-offset";
+var SEPARATOR_ATTRIBUTE = "data-sts-outline-separator";
 var LINE_WIDTH_STYLE = "--sts-outline-line-width";
 var ENABLED_CLASS = "sts-indentation-enabled";
 var GUIDE_CLASS = "sts-indentation-guides-enabled";
@@ -151,12 +152,37 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     this.readingFrame = null;
     this.editorObserver = null;
     this.editorFrame = null;
+    this.documents = /* @__PURE__ */ new Set();
+  }
+  getDocuments() {
+    this.documents.add(document);
+    this.documents.add(activeDocument);
+    this.app.workspace.iterateAllLeaves((leaf) => {
+      this.documents.add(leaf.view.containerEl.ownerDocument);
+    });
+    return [...this.documents].filter((doc) => {
+      var _a;
+      return !((_a = doc.defaultView) == null ? void 0 : _a.closed);
+    });
+  }
+  observeDocuments() {
+    this.getDocuments().forEach((doc) => {
+      var _a, _b;
+      (_a = this.readingObserver) == null ? void 0 : _a.observe(doc.body, { childList: true, subtree: true });
+      (_b = this.editorObserver) == null ? void 0 : _b.observe(doc.body, { childList: true, subtree: true });
+    });
   }
   async onload() {
     this.settings = loadSettings(await this.loadData());
     this.applySettingClasses();
     this.addSettingTab(new StsIndentationSettingTab(this.app, this));
     this.registerEditorExtension(headingOutlineEditorExtension);
+    this.registerEvent(this.app.workspace.on("window-open", (_win, win) => {
+      this.documents.add(win.document);
+      this.applySettingClasses();
+      this.scheduleReadingViewUpdate();
+      this.scheduleEditorWidgetUpdate();
+    }));
     this.registerMarkdownPostProcessor(() => {
       this.scheduleReadingViewUpdate();
     });
@@ -199,6 +225,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
       var _a;
       return (_a = this.editorObserver) == null ? void 0 : _a.disconnect();
     });
+    this.observeDocuments();
     this.scheduleReadingViewUpdate();
     this.scheduleEditorWidgetUpdate();
   }
@@ -209,44 +236,51 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     if (this.editorFrame !== null) {
       window.cancelAnimationFrame(this.editorFrame);
     }
-    activeDocument.body.classList.remove(
-      ENABLED_CLASS,
-      GUIDE_CLASS,
-      COLORED_GUIDE_CLASS,
-      FOLD_ARROW_CLASS
-    );
-    activeDocument.body.style.removeProperty(LINE_WIDTH_STYLE);
-    activeDocument.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
-      this.clearOutlineAttributes(element);
+    this.getDocuments().forEach((doc) => {
+      doc.body.classList.remove(
+        ENABLED_CLASS,
+        GUIDE_CLASS,
+        COLORED_GUIDE_CLASS,
+        FOLD_ARROW_CLASS
+      );
+      doc.body.style.removeProperty(LINE_WIDTH_STYLE);
+      doc.querySelectorAll(`[${DEPTH_ATTRIBUTE}]`).forEach((element) => {
+        this.clearOutlineAttributes(element);
+      });
     });
+    this.documents.clear();
   }
   async updateSettings(settings) {
     this.settings = Object.assign({}, this.settings, settings);
-    await this.saveData(this.settings);
     this.applySettingClasses();
     this.scheduleReadingViewUpdate();
+    this.scheduleEditorWidgetUpdate();
+    await this.saveData(this.settings);
   }
   applySettingClasses() {
-    activeDocument.body.classList.toggle(
-      ENABLED_CLASS,
-      this.settings.enableIndentation
-    );
-    activeDocument.body.classList.toggle(
-      GUIDE_CLASS,
-      this.settings.enableIndentation && this.settings.showGuides
-    );
-    activeDocument.body.classList.toggle(
-      COLORED_GUIDE_CLASS,
-      this.settings.colorGuidesByHeading
-    );
-    activeDocument.body.classList.toggle(
-      FOLD_ARROW_CLASS,
-      this.settings.enableIndentation && this.settings.showFoldArrows
-    );
-    activeDocument.body.style.setProperty(
-      LINE_WIDTH_STYLE,
-      `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
-    );
+    this.observeDocuments();
+    this.getDocuments().forEach((doc) => {
+      doc.body.classList.toggle(
+        ENABLED_CLASS,
+        this.settings.enableIndentation
+      );
+      doc.body.classList.toggle(
+        GUIDE_CLASS,
+        this.settings.enableIndentation && this.settings.showGuides
+      );
+      doc.body.classList.toggle(
+        COLORED_GUIDE_CLASS,
+        this.settings.colorGuidesByHeading
+      );
+      doc.body.classList.toggle(
+        FOLD_ARROW_CLASS,
+        this.settings.enableIndentation && this.settings.showFoldArrows
+      );
+      doc.body.style.setProperty(
+        LINE_WIDTH_STYLE,
+        `${Math.min(2, Math.max(0.1, this.settings.guideLineWidth))}px`
+      );
+    });
   }
   scheduleReadingViewUpdate() {
     if (this.readingFrame !== null) {
@@ -267,30 +301,32 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     });
   }
   updateEditorWidgets() {
-    activeDocument.querySelectorAll(`.cm-line[${DEPTH_ATTRIBUTE}]`).forEach((line) => line.style.removeProperty(EXTEND_STYLE));
-    activeDocument.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
-      container.querySelectorAll(
-        ".cm-embed-block, .image-embed, .internal-embed.image-embed"
-      ).forEach((widget) => {
-        var _a;
-        const block = (_a = widget.closest(".cm-embed-block")) != null ? _a : widget;
-        if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
-          return;
-        }
-        const line = this.findWidgetSourceLine(block);
-        if (line === null) {
-          return;
-        }
-        this.copyOutlineAttributes(line, block);
-        block.setAttribute(WIDGET_ATTRIBUTE, "true");
-        const lineRect = line.getBoundingClientRect();
-        const blockRect = block.getBoundingClientRect();
-        const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
-        const currentExtension = Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
-        line.style.setProperty(
-          EXTEND_STYLE,
-          `${Math.max(currentExtension, extension)}px`
-        );
+    this.getDocuments().forEach((doc) => {
+      doc.querySelectorAll(`.cm-line[${DEPTH_ATTRIBUTE}]`).forEach((line) => line.style.removeProperty(EXTEND_STYLE));
+      doc.querySelectorAll(".markdown-source-view.mod-cm6 .cm-content").forEach((container) => {
+        container.querySelectorAll(
+          ".cm-embed-block, .image-embed, .internal-embed.image-embed"
+        ).forEach((widget) => {
+          var _a;
+          const block = (_a = widget.closest(".cm-embed-block")) != null ? _a : widget;
+          if (block.matches(`.cm-line[${DEPTH_ATTRIBUTE}]`)) {
+            return;
+          }
+          const line = this.findWidgetSourceLine(block);
+          if (line === null) {
+            return;
+          }
+          this.copyOutlineAttributes(line, block);
+          block.setAttribute(WIDGET_ATTRIBUTE, "true");
+          const lineRect = line.getBoundingClientRect();
+          const blockRect = block.getBoundingClientRect();
+          const extension = Math.max(0, blockRect.bottom - lineRect.bottom);
+          const currentExtension = Number.parseFloat(line.style.getPropertyValue(EXTEND_STYLE)) || 0;
+          line.style.setProperty(
+            EXTEND_STYLE,
+            `${Math.max(currentExtension, extension)}px`
+          );
+        });
       });
     });
   }
@@ -323,8 +359,9 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
     }
   }
   updateReadingViews() {
+    this.applySettingClasses();
     this.updateReadingRendererSections();
-    activeDocument.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container));
+    this.getDocuments().forEach((doc) => doc.querySelectorAll(".markdown-preview-view .markdown-preview-sizer").forEach((container) => this.updateReadingContainer(container)));
   }
   updateReadingRendererSections() {
     this.app.workspace.getLeavesOfType("markdown").forEach((leaf) => {
@@ -354,6 +391,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
         this.setOutlineAttributes(element, ancestors);
       }
       this.setReadingGuideOffset(element, baseLeft);
+      element.toggleAttribute(SEPARATOR_ATTRIBUTE, this.isReadingSeparator(element));
       this.bridgeReadingBlockGap(blocks, index);
       if (container !== null) {
         this.updateMobileFoldArrow(container, element, level);
@@ -381,11 +419,14 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   previousReadingGuideBlock(blocks, index) {
     for (let previousIndex = index - 1; previousIndex >= 0; previousIndex -= 1) {
       const previous = blocks[previousIndex];
-      if (!previous.matches("hr")) {
+      if (!this.isReadingSeparator(previous)) {
         return previous;
       }
     }
     return null;
+  }
+  isReadingSeparator(element) {
+    return element.matches("hr, .el-hr") || element.querySelector(":scope > hr") !== null;
   }
   readingGuideBaseLeft(blocks, container) {
     var _a;
@@ -519,6 +560,7 @@ var StsIndentationPlugin = class extends import_obsidian.Plugin {
   clearOutlineAttributes(element) {
     element.removeAttribute(DEPTH_ATTRIBUTE);
     element.removeAttribute(WIDGET_ATTRIBUTE);
+    element.removeAttribute(SEPARATOR_ATTRIBUTE);
     element.removeAttribute(MOBILE_HEADING_ATTRIBUTE);
     element.removeAttribute(MOBILE_COLLAPSED_ATTRIBUTE);
     element.style.removeProperty(DEPTH_STYLE);
@@ -548,7 +590,7 @@ var StsIndentationSettingTab = class extends import_obsidian.PluginSettingTab {
         await this.plugin.updateSettings({ showGuides: value });
       });
     });
-    new import_obsidian.Setting(containerEl).setName("\u663E\u793A\u6298\u53E0\u7BAD\u5934").setDesc("\u5728\u5C42\u7EA7\u7EBF\u4E0A\u59CB\u7EC8\u663E\u793A\u6298\u53E0\u7BAD\u5934\uFF0C\u5E76\u66FF\u4EE3 Obsidian \u9ED8\u8BA4\u7684\u60AC\u505C\u7BAD\u5934\u3002").addToggle((toggle) => {
+    new import_obsidian.Setting(containerEl).setName("\u663E\u793A\u6298\u53E0\u7BAD\u5934").setDesc("\u5728\u6807\u9898\u5DE6\u4FA7\u59CB\u7EC8\u663E\u793A\u6298\u53E0\u7BAD\u5934\uFF0C\u4E0E\u5C42\u7EA7\u7EBF\u7559\u51FA\u95F4\u8DDD\u3002").addToggle((toggle) => {
       toggle.setValue(this.plugin.settings.showFoldArrows).onChange(async (value) => {
         await this.plugin.updateSettings({ showFoldArrows: value });
       });
